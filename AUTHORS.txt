@@ -1,0 +1,8 @@
+The following people have contributed to Rockets:
+
+Raphael Dumusc
+Daniel Nachbaur
+Stefan Eilemann
+Juan Hernando
+Grigori Chevtchenko
+John Biddiscombe
