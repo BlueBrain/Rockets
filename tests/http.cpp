@@ -22,6 +22,8 @@
 
 #define BOOST_TEST_MODULE rockets_http
 
+#include "json_utils.h"
+
 #include <rockets/http/client.h>
 #include <rockets/http/helpers.h>
 #include <rockets/http/request.h>
@@ -447,11 +449,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(handle_root, F, Fixtures, F)
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(handle_root_path, F, Fixtures, F)
 {
     F::server.handle(http::Method::GET, "/", echoFunc);
-    const char* registry =
-        R"({
-   "/" : [ "GET" ]
-}
-)";
+    const auto registry = json_reformat(R"({ "/": [ "GET" ] })");
     const http::Response registryResponse{http::Code::OK, registry, JSON_TYPE};
 
     BOOST_CHECK_EQUAL(F::client.checkGET(F::server, ""), response200);
@@ -639,7 +637,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(urlcasesensitivity, F, Fixtures, F)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(empty_registry, F, Fixtures, F)
 {
-    const http::Response emptyRegistry{http::Code::OK, "{}\n", JSON_TYPE};
+    const http::Response emptyRegistry{http::Code::OK, "null", JSON_TYPE};
     BOOST_CHECK_EQUAL(F::client.checkGET(F::server, "/registry"),
                       emptyRegistry);
 }
@@ -654,13 +652,12 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(filled_registry, F, Fixtures, F)
     for (int method = 0; method < int(http::Method::ALL); ++method)
         F::server.handle(http::Method(method), "all/", echoFunc);
 
-    const char* registry =
+    const auto registry = json_reformat(
         R"({
-   "all/" : [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" ],
-   "bla/bar" : [ "PUT" ],
-   "test/foo" : [ "GET", "PUT" ]
-}
-)";
+    "all/": [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" ],
+    "bla/bar": [ "PUT" ],
+    "test/foo": [ "GET", "PUT" ]
+})");
     const http::Response responseRegistry{http::Code::OK, registry, JSON_TYPE};
     BOOST_CHECK_EQUAL(F::client.checkGET(F::server, "/registry"),
                       responseRegistry);

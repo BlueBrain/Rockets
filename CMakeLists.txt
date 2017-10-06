@@ -43,8 +43,6 @@ common_find_package_post()
 
 set(ROCKETS_DEPENDENT_LIBRARIES Threads)
 
-set(LCOV_EXCLUDE "rockets/jsoncpp/*")
-
 add_subdirectory(apps)
 add_subdirectory(rockets)
 add_subdirectory(tests)

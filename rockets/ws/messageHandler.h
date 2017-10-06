@@ -64,6 +64,9 @@ public:
     /** The callback for messages in text format. */
     MessageCallback callbackText;
 
+    /** The callback for messages in text format with async response. */
+    MessageCallbackAsync callbackTextAsync;
+
     /** The callback for messages in binary format. */
     MessageCallback callbackBinary;
 

@@ -21,7 +21,7 @@
 
 #include "registry.h"
 
-#include "../jsoncpp/json/json.h"
+#include "../json.hpp"
 
 #include <algorithm>
 
@@ -103,22 +103,30 @@ Registry::FuncMap::const_iterator Registry::_find(
     return std::find_if(funcMap.begin(), funcMap.end(), beginsWithPath);
 }
 
+void _append(nlohmann::json& array, std::string&& value)
+{
+    if (array.is_null())
+        array = nlohmann::json::array({std::move(value)});
+    else
+        array.emplace_back(std::move(value));
+}
+
 std::string Registry::toJson() const
 {
-    Json::Value body(Json::objectValue);
+    auto body = nlohmann::json();
     for (const auto& i : _methods[int(Method::GET)])
-        body[i.first].append("GET");
+        _append(body[i.first], "GET");
     for (const auto& i : _methods[int(Method::POST)])
-        body[i.first].append("POST");
+        _append(body[i.first], "POST");
     for (const auto& i : _methods[int(Method::PUT)])
-        body[i.first].append("PUT");
+        _append(body[i.first], "PUT");
     for (const auto& i : _methods[int(Method::PATCH)])
-        body[i.first].append("PATCH");
+        _append(body[i.first], "PATCH");
     for (const auto& i : _methods[int(Method::DELETE)])
-        body[i.first].append("DELETE");
+        _append(body[i.first], "DELETE");
     for (const auto& i : _methods[int(Method::OPTIONS)])
-        body[i.first].append("OPTIONS");
-    return body.toStyledString();
+        _append(body[i.first], "OPTIONS");
+    return body.dump(4);
 }
 }
 }

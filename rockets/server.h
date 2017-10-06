@@ -163,8 +163,12 @@ public:
 
     /** Set a callback for handling closing connections. */
     ROCKETS_API void handleClose(ws::ConnectionCallback callback);
+
     /** Set a callback for handling text messages from websocket clients. */
     ROCKETS_API void handleText(ws::MessageCallback callback);
+
+    /** Set a callback for handling text messages from websocket clients. */
+    ROCKETS_API void handleText(ws::MessageCallbackAsync callback);
 
     /** Set a callback for handling binray messages from websocket clients. */
     ROCKETS_API void handleBinary(ws::MessageCallback callback);
