@@ -177,6 +177,11 @@ void Server::handleText(ws::MessageCallback callback)
     _impl->wsHandler.callbackText = callback;
 }
 
+void Server::handleText(ws::MessageCallbackAsync callback)
+{
+    _impl->wsHandler.callbackTextAsync = callback;
+}
+
 void Server::handleBinary(ws::MessageCallback callback)
 {
     _impl->wsHandler.callbackBinary = callback;

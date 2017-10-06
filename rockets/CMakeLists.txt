@@ -1,6 +1,5 @@
-# Copyright (c) 2017, EPFL/Blue Brain Project
-#                     Raphael.Dumusc@epfl.ch
-#                     Daniel.Nachbaur@epfl.ch
+# Copyright (c) 2017-2018, EPFL/Blue Brain Project
+#                          Raphael.Dumusc@epfl.ch
 #
 # This file is part of Rockets <https://github.com/BlueBrain/Rockets>
 #
@@ -17,6 +16,14 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+list(APPEND CPPCHECK_EXTRA_ARGS
+  --suppress=*:${CMAKE_CURRENT_SOURCE_DIR}/json.hpp)
+
+# bug while checking json.hpp, --suppress does not remove the error exit code
+if(CPPCHECK_VERSION VERSION_LESS 1.78)
+  list(APPEND CPPCHECK_EXTRA_ARGS --error-exitcode=0)
+endif()
+
 set(ROCKETS_PUBLIC_HEADERS
   server.h
   socketBasedInterface.h
@@ -28,6 +35,12 @@ set(ROCKETS_PUBLIC_HEADERS
   http/request.h
   http/response.h
   http/types.h
+  jsonrpc/client.h
+  jsonrpc/emitter.h
+  jsonrpc/receiver.h
+  jsonrpc/requester.h
+  jsonrpc/server.h
+  jsonrpc/types.h
   qt/readWriteSocketNotifier.h
   qt/socketProcessor.h
   ws/client.h
@@ -35,6 +48,7 @@ set(ROCKETS_PUBLIC_HEADERS
 )
 set(ROCKETS_HEADERS
   clientContext.h
+  json.hpp
   pollDescriptors.h
   proxyConnectionError.h
   serverContext.h
@@ -47,8 +61,6 @@ set(ROCKETS_HEADERS
   http/registry.h
   http/requestHandler.h
   http/utils.h
-  jsoncpp/json/json.h
-  jsoncpp/json/json-forwards.h
   ws/channel.h
   ws/connection.h
   ws/messageHandler.h
@@ -68,7 +80,9 @@ set(ROCKETS_SOURCES
   http/registry.cpp
   http/requestHandler.cpp
   http/utils.cpp
-  jsoncpp/jsoncpp.cpp
+  jsonrpc/emitter.cpp
+  jsonrpc/receiver.cpp
+  jsonrpc/requester.cpp
   ws/channel.cpp
   ws/connection.cpp
   ws/client.cpp
@@ -78,12 +92,5 @@ set(ROCKETS_SOURCES
 # std::system_error what():  Unknown error -1
 # https://stackoverflow.com/questions/43928715
 set(ROCKETS_LINK_LIBRARIES PUBLIC Threads::Threads PRIVATE websockets)
-
-if(MSVC)
-  list(APPEND ROCKETS_LINK_LIBRARIES Ws2_32)
-else()
-  set_source_files_properties(jsoncpp/jsoncpp.cpp PROPERTIES COMPILE_FLAGS
-    -Wno-shadow)
-endif()
 
 common_library(Rockets)

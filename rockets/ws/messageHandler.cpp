@@ -43,8 +43,21 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
 
     const Format format = connection.getChannel().getCurrentMessageFormat();
     Response response;
-    if (format == Format::text && callbackText)
-        response = callbackText(std::move(_buffer));
+    if (format == Format::text)
+    {
+        if (callbackText)
+            response = callbackText(std::move(_buffer));
+        else if (callbackTextAsync)
+        {
+            callbackTextAsync(std::move(_buffer),
+                              [&connection](std::string reply)
+            {
+                if (!reply.empty())
+                    connection.sendText(std::move(reply));
+            });
+            return;
+        }
+    }
     else if (format == Format::binary && callbackBinary)
         response = callbackBinary(std::move(_buffer));
 
