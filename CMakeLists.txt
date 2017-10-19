@@ -38,6 +38,8 @@ common_find_package(Libwebsockets SYSTEM REQUIRED)
 common_find_package(Threads REQUIRED)
 common_find_package_post()
 
+set(ROCKETS_DEPENDENT_LIBRARIES Threads)
+
 set(LCOV_EXCLUDE "rockets/jsoncpp/*")
 
 add_subdirectory(apps)
