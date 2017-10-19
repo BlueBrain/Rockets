@@ -45,7 +45,7 @@ public:
 
     ~ServerContext();
 
-    const std::string& getInterface() const;
+    std::string getHostname() const;
     uint16_t getPort() const;
     int getThreadCount() const;
 

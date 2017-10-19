@@ -45,9 +45,9 @@ public:
     /**
      * Construct a new server.
      *
-     * If no hostname is given, the server listens on all interfaces. If no port
-     * is given, the server selects a random port. Use getURI() to retrieve the
-     * chosen parameters.
+     * If no interface is given, the server listens on all interfaces. If no
+     * port is given, the server selects a random port. Use getURI() to retrieve
+     * the chosen parameters.
      *
      * There are three ways of processing requests on the interface:
      * - Calling process() regularly in the application's main loop.
@@ -57,7 +57,7 @@ public:
      *   in this case the registered callbacks will be executed asynchronously
      *   from the internal service threads.
      *
-     * @param uri The server address in the form "[hostname][:port]".
+     * @param uri The server address in the form "[interface][:port]".
      * @param name The name of the websockets protocol, disabled if empty.
      * @param threadCount The number of internal service threads to use.
      * @throw std::runtime_error on malformed URI or connection issues.

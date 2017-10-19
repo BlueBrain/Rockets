@@ -126,7 +126,7 @@ Server::~Server()
 
 std::string Server::getURI() const
 {
-    const auto& host = _impl->context->getInterface();
+    const auto host = _impl->context->getHostname();
 
     std::stringstream ss;
     ss << (host.empty() ? "localhost" : host) << ":" << getPort();

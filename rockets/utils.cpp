@@ -21,6 +21,21 @@
 
 #include <lws_config.h>
 
+// for NI_MAXHOST
+#ifdef _WIN32
+#include <Ws2tcpip.h>
+#else
+#include <netdb.h>
+#include <unistd.h>
+// For getIP
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#endif
+
 namespace rockets
 {
 Uri parse(std::string uri)
@@ -52,5 +67,45 @@ lws_protocols make_protocol(const char* name, lws_callback_function* callback,
 lws_protocols null_protocol()
 {
     return make_protocol(nullptr, nullptr, nullptr);
+}
+
+std::string getIP(const std::string& iface)
+{
+#ifdef _WIN32
+    return std::string();
+#else
+    struct ifaddrs *ifaddr, *ifa;
+    int s = 0;
+    char host[NI_MAXHOST] = {'\0'};
+
+    if (getifaddrs(&ifaddr) == -1)
+        return std::string();
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host,
+                        NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+
+        if ((strcmp(ifa->ifa_name, iface.c_str()) == 0) &&
+            (ifa->ifa_addr->sa_family == AF_INET))
+        {
+            if (s != 0)
+                return std::string();
+        }
+    }
+    freeifaddrs(ifaddr);
+    return host;
+#endif
+}
+
+std::string getHostname()
+{
+    char host[NI_MAXHOST + 1] = {0};
+    gethostname(host, NI_MAXHOST);
+    host[NI_MAXHOST] = '\0';
+    return host;
 }
 }

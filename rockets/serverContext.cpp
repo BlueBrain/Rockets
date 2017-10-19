@@ -46,9 +46,9 @@ ServerContext::~ServerContext()
     lws_context_destroy(context);
 }
 
-const std::string& ServerContext::getInterface() const
+std::string ServerContext::getHostname() const
 {
-    return interface;
+    return interface.empty() ? rockets::getHostname() : getIP(interface);
 }
 
 uint16_t ServerContext::getPort() const
