@@ -185,6 +185,7 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* /*user*/,
                 client->abortRequest(wsi, message);
             return closeConnection;
         }
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
         case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
             if (request)
             {
@@ -215,6 +216,7 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* /*user*/,
         case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
             client->finishRequest(wsi);
             break;
+#endif
 
         case LWS_CALLBACK_ADD_POLL_FD:
             client->pollDescriptors.add(static_cast<lws_pollargs*>(in));

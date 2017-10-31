@@ -39,14 +39,18 @@ int RequestHandler::writeHeaders(unsigned char** buffer, const size_t size)
     return channel.writeRequestHeader(body, buffer, size);
 }
 
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
 int RequestHandler::writeBody()
 {
     return channel.writeRequestBody(body);
 }
+#endif
 
 void RequestHandler::readResponseHeaders()
 {
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
     response.code = channel.readResponseCode();
+#endif
     response.headers = channel.readResponseHeaders();
     responseLength = channel.readContentLength();
 }
