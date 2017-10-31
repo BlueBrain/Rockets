@@ -65,7 +65,7 @@ lws* ClientContext::startHttpRequest(const http::Method method,
     auto connectInfo = makeConnectInfo(parsedUri);
 
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
-    if (method != Method::GET)
+    if (method != http::Method::GET)
         throw std::invalid_argument(onlyGetSupported);
 #else
     connectInfo.method = http::to_cstring(method);

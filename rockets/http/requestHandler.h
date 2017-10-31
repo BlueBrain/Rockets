@@ -23,6 +23,8 @@
 #include <rockets/http/channel.h>
 #include <rockets/http/types.h>
 
+#include <lws_config.h>
+
 namespace rockets
 {
 namespace http
@@ -38,7 +40,9 @@ public:
     std::future<Response> getFuture();
 
     int writeHeaders(unsigned char** buffer, const size_t size);
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
     int writeBody();
+#endif
 
     void readResponseHeaders();
     bool hasResponseBody() const;

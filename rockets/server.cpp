@@ -236,7 +236,9 @@ static int callback_http(lws* wsi, const lws_callback_reasons reason,
                 return handler.respondToRequest(impl->connections.at(wsi));
             break;
 
-        case LWS_CALLBACK_HTTP_DROP_PROTOCOL: // nobreak
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+        case LWS_CALLBACK_HTTP_DROP_PROTOCOL: // fall-through
+#endif
         case LWS_CALLBACK_CLOSED_HTTP:
             impl->connections.erase(wsi);
             break;
