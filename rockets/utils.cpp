@@ -56,7 +56,8 @@ lws_protocols make_protocol(const char* name, lws_callback_function* callback,
                             void* user)
 {
     // clang-format off
-    return lws_protocols{ name, callback, 0, 0, 0, user
+    const size_t rx_buffer_size = 1048576; // 1MB
+    return lws_protocols{ name, callback, 0, rx_buffer_size, 0, user
         #if LWS_LIBRARY_VERSION_NUMBER >= 2003000
                 , 0
         #endif
