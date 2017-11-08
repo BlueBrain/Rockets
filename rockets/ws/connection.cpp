@@ -25,7 +25,6 @@ namespace rockets
 {
 namespace ws
 {
-
 Connection::Connection(std::unique_ptr<Channel> channel_)
     : channel{std::move(channel_)}
 {
@@ -33,19 +32,23 @@ Connection::Connection(std::unique_ptr<Channel> channel_)
 
 void Connection::sendText(std::string message)
 {
-    _send(std::move(message), Format::text);
+    enqueueText(std::move(message));
+    channel->requestWrite();
 }
 
 void Connection::sendBinary(std::string message)
 {
-    _send(std::move(message), Format::binary);
+    enqueueBinary(std::move(message));
+    channel->requestWrite();
 }
 
 void Connection::writeMessages()
 {
-    for (auto&& message : out)
-        channel->write(std::move(message.first), message.second);
-    out.clear();
+    while (hasMessage() && channel->canWrite())
+        writeOneMessage();
+
+    if (hasMessage())
+        channel->requestWrite();
 }
 
 void Connection::enqueueText(std::string message)
@@ -58,11 +61,16 @@ void Connection::enqueueBinary(std::string message)
     out.emplace_back(std::move(message), Format::binary);
 }
 
-void Connection::_send(std::string&& message, Format format)
+bool Connection::hasMessage() const
 {
-    out.emplace_back(std::move(message), format);
-    channel->requestWrite();
+    return !out.empty();
 }
 
+void Connection::writeOneMessage()
+{
+    auto& message = out.at(0);
+    channel->write(std::move(message.first), message.second);
+    out.pop_front();
+}
 }
 }

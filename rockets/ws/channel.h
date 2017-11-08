@@ -41,6 +41,7 @@ public:
     Format getCurrentMessageFormat() const;
 
     void requestWrite();
+    bool canWrite() const;
     void write(std::string&& message, Format format);
 
 private:

@@ -22,8 +22,8 @@
 
 #include <rockets/ws/types.h>
 
+#include <deque>
 #include <memory>
-#include <vector>
 
 namespace rockets
 {
@@ -56,11 +56,11 @@ public:
 
 private:
     std::unique_ptr<Channel> channel;
-    std::vector<std::pair<std::string, Format>> out;
+    std::deque<std::pair<std::string, Format>> out;
 
-    void _send(std::string&& message, Format format);
+    bool hasMessage() const;
+    void writeOneMessage();
 };
-
 }
 }
 

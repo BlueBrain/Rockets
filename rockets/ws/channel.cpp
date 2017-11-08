@@ -47,6 +47,11 @@ void Channel::requestWrite()
     lws_callback_on_writable(wsi);
 }
 
+bool Channel::canWrite() const
+{
+    return !lws_send_pipe_choked(wsi);
+}
+
 void Channel::write(std::string&& message, const Format format)
 {
     const auto size = message.size();
