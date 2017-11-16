@@ -20,9 +20,9 @@
 #ifndef ROCKETS_HTTP_CLIENT_H
 #define ROCKETS_HTTP_CLIENT_H
 
-#include <rockets/socketBasedInterface.h>
 #include <rockets/http/request.h>
 #include <rockets/http/response.h>
+#include <rockets/socketBasedInterface.h>
 
 namespace rockets
 {

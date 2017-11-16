@@ -19,12 +19,12 @@
 
 #include "client.h"
 
-#include "channel.h"
-#include "requestHandler.h"
-#include "utils.h"
 #include "../clientContext.h"
 #include "../pollDescriptors.h"
 #include "../utils.h"
+#include "channel.h"
+#include "requestHandler.h"
+#include "utils.h"
 
 #include <libwebsockets.h>
 
@@ -56,11 +56,7 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* user,
 class Client::Impl
 {
 public:
-    Impl()
-    {
-        context = make_unique<ClientContext>(callback_http, this);
-    }
-
+    Impl() { context = make_unique<ClientContext>(callback_http, this); }
     ~Impl()
     {
         abortPendingRequests();
@@ -102,7 +98,7 @@ public:
         if (auto request = getRequest(wsi))
         {
             auto message = std::string("connection failed");
-            if(!reason.empty())
+            if (!reason.empty())
                 message.append(": ").append(reason);
             request->abort(std::runtime_error{message});
         }
@@ -233,6 +229,5 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* /*user*/,
     }
     return 0;
 }
-
 }
 }

@@ -20,9 +20,9 @@
 #ifndef ROCKETS_CLIENTCONTEXT_H
 #define ROCKETS_CLIENTCONTEXT_H
 
+#include <rockets/http/types.h>
 #include <rockets/pollDescriptors.h>
 #include <rockets/utils.h>
-#include <rockets/http/types.h>
 #include <rockets/ws/types.h>
 
 #include <libwebsockets.h>

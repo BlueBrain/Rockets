@@ -19,11 +19,11 @@
 
 #include "client.h"
 
-#include "connection.h"
-#include "channel.h"
-#include "messageHandler.h"
 #include "../clientContext.h"
 #include "../pollDescriptors.h"
+#include "channel.h"
+#include "connection.h"
+#include "messageHandler.h"
 
 namespace
 {
@@ -165,6 +165,5 @@ static int callback_ws(lws* wsi, lws_callback_reasons reason, void* /*user*/,
     }
     return 0;
 }
-
 }
 }

@@ -117,7 +117,7 @@ CorsRequestHeaders Channel::readCorsRequestHeaders() const
     CorsRequestHeaders cors;
     cors.origin = _readHeader(WSI_TOKEN_ORIGIN);
     cors.accessControlRequestHeaders =
-            _readHeader(WSI_TOKEN_HTTP_AC_REQUEST_HEADERS);
+        _readHeader(WSI_TOKEN_HTTP_AC_REQUEST_HEADERS);
 
     // Missing support for Access-Control-Request-Method in libwebsockets
     // https://github.com/warmcat/libwebsockets/issues/853
@@ -204,8 +204,8 @@ Response::Headers Channel::readResponseHeaders() const
 {
     Response::Headers headers;
     for (auto header :
-    {Header::ALLOW, Header::CONTENT_TYPE, Header::LAST_MODIFIED,
-         Header::LOCATION, Header::RETRY_AFTER})
+         {Header::ALLOW, Header::CONTENT_TYPE, Header::LAST_MODIFIED,
+          Header::LOCATION, Header::RETRY_AFTER})
     {
         auto value = _readHeader(to_lws_token(header));
         if (!value.empty())
@@ -225,8 +225,8 @@ int Channel::writeRequestHeader(const std::string& body, unsigned char** buffer,
 
     const auto length = std::to_string(body.size());
     const auto data = (unsigned char*)length.c_str();
-    if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH,
-                                     data, length.size(), buffer, end))
+    if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH, data,
+                                     length.size(), buffer, end))
     {
         return -1;
     }

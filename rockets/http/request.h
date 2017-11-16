@@ -23,8 +23,8 @@
 
 #include <rockets/http/types.h>
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace rockets
 {

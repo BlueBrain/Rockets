@@ -50,7 +50,7 @@ public:
      *         can be a std::runtime_error if the connection fails.
      */
     ROCKETS_API std::future<void> connect(const std::string& uri,
-                                           const std::string& protocol);
+                                          const std::string& protocol);
     //@}
 
     /** Send a text message to the websocket server. */

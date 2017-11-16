@@ -23,7 +23,6 @@ namespace rockets
 {
 namespace ws
 {
-
 namespace
 {
 lws_write_protocol _getProtocol(const Format format)
@@ -60,6 +59,5 @@ void Channel::write(std::string&& message, const Format format)
     const auto protocol = _getProtocol(format);
     lws_write(wsi, data, size, protocol);
 }
-
 }
 }

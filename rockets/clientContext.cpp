@@ -36,7 +36,6 @@ const char* onlyGetSupported = "Only GET is supported with lws < 2.0";
 
 namespace rockets
 {
-
 ClientContext::ClientContext(lws_callback_function* callback, void* user)
     : protocols{make_protocol("default", callback, user), null_protocol()}
 {
@@ -74,8 +73,8 @@ lws* ClientContext::startHttpRequest(const http::Method method,
     return lws_client_connect_via_info(&connectInfo);
 }
 
-std::unique_ptr<ws::Connection>
-ClientContext::connect(const std::string& uri, const std::string& protocol)
+std::unique_ptr<ws::Connection> ClientContext::connect(
+    const std::string& uri, const std::string& protocol)
 {
     wsProtocolName = protocol;
     protocols[0].name = wsProtocolName.c_str();
@@ -118,5 +117,4 @@ lws_client_connect_info ClientContext::makeConnectInfo(const Uri& uri) const
 
     return c_info;
 }
-
 }

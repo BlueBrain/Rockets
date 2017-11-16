@@ -99,7 +99,7 @@ std::string getIP(const std::string& iface)
             continue;
         }
 
-        if( getnameinfo(ifa->ifa_addr, salen, host, NI_MAXHOST, NULL, 0,
+        if (getnameinfo(ifa->ifa_addr, salen, host, NI_MAXHOST, NULL, 0,
                         NI_NUMERICHOST) == 0)
         {
             // found it

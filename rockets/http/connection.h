@@ -50,7 +50,6 @@ public:
 
     Request& getRequest() { return request; }
     const Request& getRequest() const { return request; }
-
     void delayResponse();
 
     int write(const Response& response, const CorsResponseHeaders& cors);
