@@ -76,25 +76,34 @@ std::string getIP(const std::string& iface)
     return std::string();
 #else
     struct ifaddrs *ifaddr, *ifa;
-    int s = 0;
     char host[NI_MAXHOST] = {'\0'};
 
     if (getifaddrs(&ifaddr) == -1)
         return std::string();
 
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next)
     {
-        if (ifa->ifa_addr == NULL)
+        if (!ifa->ifa_addr || iface != ifa->ifa_name)
             continue;
 
-        s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host,
-                        NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-
-        if ((strcmp(ifa->ifa_name, iface.c_str()) == 0) &&
-            (ifa->ifa_addr->sa_family == AF_INET))
+        socklen_t salen = 0;
+        switch (ifa->ifa_addr->sa_family)
         {
-            if (s != 0)
-                return std::string();
+        case AF_INET:
+            salen = sizeof(sockaddr_in);
+            break;
+        case AF_INET6:
+            salen = sizeof(sockaddr_in6);
+            break;
+        default:
+            continue;
+        }
+
+        if( getnameinfo(ifa->ifa_addr, salen, host, NI_MAXHOST, NULL, 0,
+                        NI_NUMERICHOST) == 0)
+        {
+            // found it
+            break;
         }
     }
     freeifaddrs(ifaddr);
