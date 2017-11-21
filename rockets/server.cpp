@@ -162,6 +162,16 @@ bool Server::remove(const std::string& endpoint)
     return _impl->registry.remove(endpoint);
 }
 
+void Server::handleOpen(ws::ConnectionCallback callback)
+{
+    _impl->wsHandler.callbackOpen = callback;
+}
+
+void Server::handleClose(ws::ConnectionCallback callback)
+{
+    _impl->wsHandler.callbackClose = callback;
+}
+
 void Server::handleText(ws::MessageCallback callback)
 {
     _impl->wsHandler.callbackText = callback;
@@ -271,8 +281,10 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
         {
         case LWS_CALLBACK_ESTABLISHED:
             impl->openWsConnection(wsi);
+            impl->wsHandler.handleOpenConnection(impl->wsConnections.at(wsi));
             break;
         case LWS_CALLBACK_CLOSED:
+            impl->wsHandler.handleCloseConnection(impl->wsConnections.at(wsi));
             impl->closeWsConnection(wsi);
             break;
 
@@ -280,7 +292,8 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
         {
             const auto format = ws::Channel{wsi}.getCurrentMessageFormat();
             auto& connection = impl->wsConnections.at(wsi);
-            impl->wsHandler.handle(connection, (const char*)in, len, format);
+            impl->wsHandler.handleMessage(connection, (const char*)in, len,
+                                          format);
             break;
         }
         case LWS_CALLBACK_SERVER_WRITEABLE:

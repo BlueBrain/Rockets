@@ -158,6 +158,11 @@ public:
 
     /** @name Websockets functionality */
     //@{
+    /** Set a callback for handling incoming connections. */
+    ROCKETS_API void handleOpen(ws::ConnectionCallback callback);
+
+    /** Set a callback for handling closing connections. */
+    ROCKETS_API void handleClose(ws::ConnectionCallback callback);
     /** Set a callback for handling text messages from websocket clients. */
     ROCKETS_API void handleText(ws::MessageCallback callback);
 

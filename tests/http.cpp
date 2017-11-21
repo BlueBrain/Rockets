@@ -270,7 +270,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(issue157, F, Fixtures, F)
             F::server.process(100);
     });
 
-    // Close client before receiving request to provoke #157
+    // Close client before receiving request to provoke
+    // https://github.com/HBPVIS/ZeroEQ/issues/157
     {
         MockClient tmp;
         tmp.request(F::server.getURI() + "/test/foo?" + std::string(1024, 'o'));

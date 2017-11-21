@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace rockets
 {
@@ -35,11 +36,51 @@ class Connection;
 enum class Format
 {
     text,
-    binary
+    binary,
+    unspecified
+};
+
+/**
+ * The different types of recipients for a response.
+ */
+enum class Recipient
+{
+    sender,
+    others,
+    all
+};
+
+/**
+ * A response followed after an incoming message/request.
+ */
+struct Response
+{
+    Response() = default;
+
+    Response(const char* message_)
+        : message(message_)
+    {
+    }
+
+    Response(const std::string& message_,
+             const Recipient recipient_ = Recipient::sender,
+             const Format format_ = Format::unspecified)
+        : message(message_)
+        , recipient(recipient_)
+        , format(format_)
+    {
+    }
+
+    std::string message;
+    Recipient recipient = Recipient::sender;
+    Format format = Format::unspecified; // derive from request format
 };
 
 /** WebSocket callback for handling text / binary messages. */
-using MessageCallback = std::function<std::string(std::string)>;
+using MessageCallback = std::function<Response(std::string)>;
+
+/** Websocket callback for handling connection (open/close) messages. */
+using ConnectionCallback = std::function<std::vector<Response>()>;
 }
 }
 

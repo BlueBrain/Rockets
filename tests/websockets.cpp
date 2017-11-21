@@ -19,13 +19,16 @@
 
 #define BOOST_TEST_MODULE rockets_websockets
 
-#include <rockets/ws/client.h>
 #include <rockets/server.h>
+#include <rockets/ws/client.h>
 
 #include <iostream>
 
 #include <boost/mpl/vector.hpp>
 #include <boost/test/unit_test.hpp>
+
+#define CLIENT_SUPPORTS_INEXISTANT_PROTOCOL_ERRORS \
+    (LWS_LIBRARY_VERSION_NUMBER >= 2000000)
 
 using namespace rockets;
 
@@ -68,6 +71,7 @@ BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_server)
     BOOST_CHECK_THROW(future.get(), std::runtime_error);
 }
 
+#if CLIENT_SUPPORTS_INEXISTANT_PROTOCOL_ERRORS
 BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_protocol)
 {
     Server server{"", wsProtocol};
@@ -81,6 +85,7 @@ BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_protocol)
     }
     BOOST_CHECK_THROW(future.get(), std::runtime_error);
 }
+#endif
 
 /**
  * Fixtures to run all test cases with {0, 1, 2} server worker threads.
@@ -89,10 +94,14 @@ struct Fixture
 {
     ws::Client client1;
     ws::Client client2;
+    std::unique_ptr<ws::Client> client3{new ws::Client};
     std::atomic<bool> receivedMessage1 = {false};
     std::atomic<bool> receivedMessage2 = {false};
     std::atomic<bool> receivedReply1 = {false};
     std::atomic<bool> receivedReply2 = {false};
+    std::atomic<bool> receivedConnect = {false};
+    std::atomic<bool> receivedConnectReply = {false};
+    std::atomic<bool> receivedDisconnect = {false};
 
     void processClient1(Server& server)
     {
@@ -105,11 +114,26 @@ struct Fixture
         }
     }
 
+    void processClient3(Server& server)
+    {
+        int maxServiceLoops = 5;
+        while (
+            !(receivedConnect && receivedConnectReply && receivedDisconnect) &&
+            --maxServiceLoops)
+        {
+            if (client3)
+                client3->process(5);
+            if (server.getThreadCount() == 0)
+                server.process(0);
+        }
+    }
+
     void processAllClients(Server& server)
     {
         int maxServiceLoops = 10;
         while (!(receivedMessage1 && receivedMessage2 && receivedReply1 &&
-                 receivedReply2) && --maxServiceLoops)
+                 receivedReply2) &&
+               --maxServiceLoops)
         {
             client1.process(5);
             client2.process(5);
@@ -188,11 +212,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_text_message, F, Fixtures, F)
         F::receivedMessage2 = true;
         return "client2";
     });
-    F::server.handleText([&](const std::string& message)
-    {
+    F::server.handleText([&](const std::string& message) {
         if (message == "client1")
             F::receivedReply1 = true;
-        else if(message == "client2")
+        else if (message == "client2")
             F::receivedReply2 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -224,11 +247,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_binary, F, Fixtures, F)
         F::receivedMessage2 = true;
         return "client2";
     });
-    F::server.handleBinary([&](const std::string& message)
-    {
+    F::server.handleBinary([&](const std::string& message) {
         if (message == "client1")
             F::receivedReply1 = true;
-        else if(message == "client2")
+        else if (message == "client2")
             F::receivedReply2 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -246,4 +268,129 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_binary, F, Fixtures, F)
     BOOST_CHECK(F::receivedMessage2);
     BOOST_CHECK(F::receivedReply1);
     BOOST_CHECK(F::receivedReply2);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_text_response_to_others, F,
+                                 Fixtures, F)
+{
+    F::client2.handleText([&](const std::string& message) {
+        BOOST_REQUIRE(message == "hello");
+        F::receivedMessage2 = true;
+        return "client2";
+    });
+    F::server.handleText([&](const std::string& message) {
+        if (message == "client1")
+        {
+            F::receivedReply1 = true;
+            return ws::Response{"hello", ws::Recipient::others};
+        }
+        else if (message == "client2")
+            F::receivedReply2 = true;
+        else
+            BOOST_REQUIRE(!"valid message");
+        return ws::Response{};
+    });
+
+    connect(F::client1, F::server);
+    connect(F::client2, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 2);
+
+    F::client1.sendText("client1");
+    F::processAllClients(F::server);
+
+    BOOST_CHECK(F::receivedMessage2);
+    BOOST_CHECK(F::receivedReply2);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_binary_response_to_all, F,
+                                 Fixtures, F)
+{
+    F::client1.handleBinary([&](const std::string& message) {
+        BOOST_REQUIRE(message == "bar");
+        F::receivedMessage1 = true;
+        return "";
+    });
+    F::client2.handleBinary([&](const std::string& message) {
+        BOOST_REQUIRE(message == "bar");
+        F::receivedMessage2 = true;
+        return "";
+    });
+    F::server.handleBinary([&](const std::string& message) {
+        if (message == "foo")
+            F::receivedReply1 = true;
+        else
+            BOOST_REQUIRE(!"valid message");
+        return ws::Response{"bar", ws::Recipient::all};
+    });
+
+    connect(F::client1, F::server);
+    connect(F::client2, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 2);
+
+    F::client1.sendBinary("foo", 3);
+    F::processAllClients(F::server);
+
+    BOOST_CHECK(F::receivedMessage1);
+    BOOST_CHECK(F::receivedReply1);
+    BOOST_CHECK(F::receivedMessage2);
+    BOOST_CHECK(!F::receivedReply2);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
+{
+    short numConnections = 0;
+
+    F::client3->handleText([&](const std::string& message) {
+        BOOST_REQUIRE(message == "Connect");
+        F::receivedConnectReply = true;
+        return "";
+    });
+
+    F::server.handleOpen([&] {
+        F::receivedConnect = true;
+        ++numConnections;
+        return std::vector<ws::Response>{
+            {"Connect", ws::Recipient::sender, ws::Format::text}};
+    });
+
+    F::server.handleClose([&] {
+        F::receivedDisconnect = true;
+        --numConnections;
+        return std::vector<ws::Response>{};
+    });
+
+    connect(*F::client3, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 1);
+
+    F::processClient3(F::server);
+    BOOST_CHECK_EQUAL(numConnections, 1);
+    BOOST_CHECK(F::receivedConnectReply);
+
+    F::client3.reset();
+    F::processClient3(F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 0);
+    BOOST_CHECK_EQUAL(numConnections, 0);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_unspecified_format_response, F,
+                                 Fixtures, F)
+{
+    F::server.handleOpen([&] {
+        F::receivedConnect = true;
+        return std::vector<ws::Response>{
+            {"unspecified format", ws::Recipient::sender}};
+    });
+
+    F::client3->handleText([&](const std::string&) {
+        F::receivedConnectReply = true;
+        return "";
+    });
+    F::client3->handleBinary([&](const std::string&) {
+        F::receivedConnectReply = true;
+        return "";
+    });
+
+    connect(*F::client3, F::server);
+    BOOST_CHECK(F::receivedConnect);
+    BOOST_CHECK(!F::receivedConnectReply);
 }

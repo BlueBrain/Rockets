@@ -44,6 +44,7 @@ ClientContext::ClientContext(lws_callback_function* callback, void* user)
     info.protocols = protocols.data();
     info.gid = -1;
     info.uid = -1;
+    info.max_http_header_data = 4096;
     context = lws_create_context(&info);
     if (!context)
         throw std::runtime_error(contextInitFailure);

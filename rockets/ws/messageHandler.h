@@ -33,6 +33,20 @@ class MessageHandler
 {
 public:
     /**
+     * Handle a new connection.
+     *
+     * @param connection the connection to use for reply.
+     */
+    void handleOpenConnection(Connection& connection);
+
+    /**
+     * Handle close of a connection.
+     *
+     * @param connection the connection to use for reply.
+     */
+    void handleCloseConnection(Connection& connection);
+
+    /**
      * Handle an incomming message for the given connection.
      *
      * @param connection the connection to use for reply.
@@ -40,14 +54,25 @@ public:
      * @param len the length of the data.
      * @param format the format of the data.
      */
-    void handle(Connection& connection, const char* data, size_t len,
-                Format format);
+    void handleMessage(Connection& connection, const char* data, size_t len,
+                       Format format);
+
+    /** The callback for incoming connections. */
+    ConnectionCallback callbackOpen;
+
+    /** The callback for closing connections. */
+    ConnectionCallback callbackClose;
 
     /** The callback for messages in text format. */
     MessageCallback callbackText;
 
     /** The callback for messages in binary format. */
     MessageCallback callbackBinary;
+
+private:
+    void _sendResponse(const Response& response, Connection& connection);
+
+    std::vector<Connection*> _connections;
 };
 }
 }

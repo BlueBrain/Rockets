@@ -21,24 +21,87 @@
 
 #include "connection.h"
 
+#include <algorithm>
+
 namespace rockets
 {
 namespace ws
 {
-void MessageHandler::handle(Connection& connection, const char* data,
-                            const size_t len, const Format format)
+void MessageHandler::handleMessage(Connection& connection, const char* data,
+                                   const size_t len, const Format format)
 {
+    Response response;
     if (format == Format::text && callbackText)
-    {
-        auto response = callbackText({data, len});
-        if (!response.empty())
-            connection.sendText(std::move(response));
-    }
+        response = callbackText({data, len});
     else if (format == Format::binary && callbackBinary)
+        response = callbackBinary({data, len});
+
+    if (response.format == Format::unspecified)
+        response.format = format;
+    _sendResponse(response, connection);
+}
+
+void MessageHandler::handleOpenConnection(Connection& connection)
+{
+    _connections.push_back(&connection);
+    if (!callbackOpen)
+        return;
+
+    auto responses = callbackOpen();
+    for (auto& response : responses)
+        _sendResponse(response, connection);
+}
+
+void MessageHandler::handleCloseConnection(Connection& connection)
+{
+    auto end = std::remove_if(_connections.begin(), _connections.end(),
+                              [&connection](Connection* conn) {
+                                  return conn == &connection;
+                              });
+    _connections.erase(end, _connections.end());
+
+    if (!callbackClose)
+        return;
+
+    auto responses = callbackClose();
+    for (auto& response : responses)
+        _sendResponse(response, connection);
+}
+
+void MessageHandler::_sendResponse(const Response& response, Connection& sender)
+{
+    if (response.message.empty())
+        return;
+
+    std::vector<Connection*> connections;
+    switch (response.recipient)
     {
-        auto response = callbackBinary({data, len});
-        if (!response.empty())
-            connection.sendBinary(std::move(response));
+    case Recipient::all:
+        connections = _connections;
+        break;
+    case Recipient::others:
+        connections = _connections;
+        std::remove_if(connections.begin(), connections.end(),
+                       [&sender](Connection* conn) { return conn == &sender; });
+        break;
+    case Recipient::sender:
+    default:
+        connections.push_back(&sender);
+    }
+
+    for (auto connection : connections)
+    {
+        switch (response.format)
+        {
+        case Format::unspecified:
+            break;
+        case Format::binary:
+            connection->sendBinary(std::move(response.message));
+            break;
+        case Format::text:
+        default:
+            connection->sendText(std::move(response.message));
+        }
     }
 }
 }
