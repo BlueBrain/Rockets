@@ -80,10 +80,13 @@ void MessageHandler::_sendResponse(const Response& response, Connection& sender)
         connections = _connections;
         break;
     case Recipient::others:
+    {
         connections = _connections;
-        std::remove_if(connections.begin(), connections.end(),
+        auto end = std::remove_if(connections.begin(), connections.end(),
                        [&sender](Connection* conn) { return conn == &sender; });
+        connections.erase(end, connections.end());
         break;
+    }
     case Recipient::sender:
     default:
         connections.push_back(&sender);
