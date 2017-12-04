@@ -287,15 +287,10 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
             impl->wsHandler.handleCloseConnection(impl->wsConnections.at(wsi));
             impl->closeWsConnection(wsi);
             break;
-
         case LWS_CALLBACK_RECEIVE:
-        {
-            const auto format = ws::Channel{wsi}.getCurrentMessageFormat();
-            auto& connection = impl->wsConnections.at(wsi);
-            impl->wsHandler.handleMessage(connection, (const char*)in, len,
-                                          format);
+            impl->wsHandler.handleMessage(impl->wsConnections.at(wsi),
+                                          (const char*)in, len);
             break;
-        }
         case LWS_CALLBACK_SERVER_WRITEABLE:
             impl->wsConnections.at(wsi).writeMessages();
             break;

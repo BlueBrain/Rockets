@@ -51,6 +51,16 @@ bool Channel::canWrite() const
     return !lws_send_pipe_choked(wsi);
 }
 
+bool Channel::currentMessageHasMore() const
+{
+    return !lws_is_final_fragment(wsi);
+}
+
+size_t Channel::getCurrentMessageRemainingSize() const
+{
+    return lws_remaining_packet_payload(wsi);
+}
+
 void Channel::write(std::string&& message, const Format format)
 {
     const auto size = message.size();

@@ -105,8 +105,7 @@ struct Fixture
 
     void processClient1(Server& server)
     {
-        int maxServiceLoops = 5;
-        while (!(receivedMessage1 && receivedReply1) && --maxServiceLoops)
+        while (!(receivedMessage1 && receivedReply1))
         {
             client1.process(5);
             if (server.getThreadCount() == 0)
@@ -114,12 +113,20 @@ struct Fixture
         }
     }
 
-    void processClient3(Server& server)
+    void processClient3Connect(Server& server)
     {
-        int maxServiceLoops = 5;
-        while (
-            !(receivedConnect && receivedConnectReply && receivedDisconnect) &&
-            --maxServiceLoops)
+        while (!(receivedConnect && receivedConnectReply))
+        {
+            if (client3)
+                client3->process(5);
+            if (server.getThreadCount() == 0)
+                server.process(0);
+        }
+    }
+
+    void processClient3Disconnect(Server& server)
+    {
+        while (!receivedDisconnect)
         {
             if (client3)
                 client3->process(5);
@@ -194,6 +201,32 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_binary_message, F, Fixtures, F)
     BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 1);
 
     F::client1.sendBinary("hello", 5);
+    F::processClient1(F::server);
+
+    BOOST_CHECK(F::receivedMessage1);
+    BOOST_CHECK(F::receivedReply1);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_large_binary_message, F, Fixtures,
+                                 F)
+{
+    const std::string big(1024 * 1024 * 2, 'a');
+
+    F::server.handleBinary([&](const std::string& message) {
+        BOOST_REQUIRE(message.size() == big.size());
+        F::receivedMessage1 = true;
+        return "server";
+    });
+    F::client1.handleBinary([&](const std::string& message) {
+        BOOST_REQUIRE(message == "server");
+        F::receivedReply1 = true;
+        return "";
+    });
+
+    connect(F::client1, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 1);
+
+    F::client1.sendBinary(big.data(), big.size());
     F::processClient1(F::server);
 
     BOOST_CHECK(F::receivedMessage1);
@@ -347,29 +380,29 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
     });
 
     F::server.handleOpen([&] {
-        F::receivedConnect = true;
         ++numConnections;
+        F::receivedConnect = true;
         return std::vector<ws::Response>{
             {"Connect", ws::Recipient::sender, ws::Format::text}};
     });
 
     F::server.handleClose([&] {
-        F::receivedDisconnect = true;
         --numConnections;
+        F::receivedDisconnect = true;
         return std::vector<ws::Response>{};
     });
 
     connect(*F::client3, F::server);
     BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 1);
 
-    F::processClient3(F::server);
+    F::processClient3Connect(F::server);
     BOOST_CHECK_EQUAL(numConnections, 1);
     BOOST_CHECK(F::receivedConnectReply);
 
     F::client3.reset();
-    F::processClient3(F::server);
-    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 0);
+    F::processClient3Disconnect(F::server);
     BOOST_CHECK_EQUAL(numConnections, 0);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 0);
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_unspecified_format_response, F,

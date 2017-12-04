@@ -39,6 +39,8 @@ public:
     explicit Channel(lws* wsi);
 
     Format getCurrentMessageFormat() const;
+    bool currentMessageHasMore() const;
+    size_t getCurrentMessageRemainingSize() const;
 
     void requestWrite();
     bool canWrite() const;
