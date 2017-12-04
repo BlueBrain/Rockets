@@ -140,12 +140,9 @@ static int callback_ws(lws* wsi, lws_callback_reasons reason, void* /*user*/,
         }
 
         case LWS_CALLBACK_CLIENT_RECEIVE:
-        {
-            const auto format = Channel{wsi}.getCurrentMessageFormat();
             client->messageHandler.handleMessage(*client->connection,
-                                                 (const char*)in, len, format);
+                                                 (const char*)in, len);
             break;
-        }
         case LWS_CALLBACK_CLIENT_WRITEABLE:
             client->connection->writeMessages();
             break;

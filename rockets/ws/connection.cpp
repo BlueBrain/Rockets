@@ -61,6 +61,11 @@ void Connection::enqueueBinary(std::string message)
     out.emplace_back(std::move(message), Format::binary);
 }
 
+const Channel& Connection::getChannel() const
+{
+    return *channel;
+}
+
 bool Connection::hasMessage() const
 {
     return !out.empty();

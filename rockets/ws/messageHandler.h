@@ -52,10 +52,8 @@ public:
      * @param connection the connection to use for reply.
      * @param data the incoming data pointer.
      * @param len the length of the data.
-     * @param format the format of the data.
      */
-    void handleMessage(Connection& connection, const char* data, size_t len,
-                       Format format);
+    void handleMessage(Connection& connection, const char* data, size_t len);
 
     /** The callback for incoming connections. */
     ConnectionCallback callbackOpen;
@@ -73,6 +71,7 @@ private:
     void _sendResponse(const Response& response, Connection& connection);
 
     std::vector<Connection*> _connections;
+    std::string _buffer;
 };
 }
 }

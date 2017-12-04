@@ -54,6 +54,9 @@ public:
     /** Enqueue a binary message. */
     void enqueueBinary(std::string message);
 
+    /** @internal*. */
+    const Channel& getChannel() const;
+
 private:
     std::unique_ptr<Channel> channel;
     std::deque<std::pair<std::string, Format>> out;

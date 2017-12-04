@@ -19,6 +19,7 @@
 
 #include "messageHandler.h"
 
+#include "channel.h"
 #include "connection.h"
 
 #include <algorithm>
@@ -28,13 +29,24 @@ namespace rockets
 namespace ws
 {
 void MessageHandler::handleMessage(Connection& connection, const char* data,
-                                   const size_t len, const Format format)
+                                   const size_t len)
 {
+    // compose potentially fragmented message
+    if (connection.getChannel().currentMessageHasMore() && _buffer.empty())
+    {
+        _buffer.reserve(
+            len + connection.getChannel().getCurrentMessageRemainingSize());
+    }
+    _buffer.append(data, len);
+    if (connection.getChannel().currentMessageHasMore())
+        return;
+
+    const Format format = connection.getChannel().getCurrentMessageFormat();
     Response response;
     if (format == Format::text && callbackText)
-        response = callbackText({data, len});
+        response = callbackText(std::move(_buffer));
     else if (format == Format::binary && callbackBinary)
-        response = callbackBinary({data, len});
+        response = callbackBinary(std::move(_buffer));
 
     if (response.format == Format::unspecified)
         response.format = format;
@@ -83,7 +95,9 @@ void MessageHandler::_sendResponse(const Response& response, Connection& sender)
     {
         connections = _connections;
         auto end = std::remove_if(connections.begin(), connections.end(),
-                       [&sender](Connection* conn) { return conn == &sender; });
+                                  [&sender](Connection* conn) {
+                                      return conn == &sender;
+                                  });
         connections.erase(end, connections.end());
         break;
     }
