@@ -1,0 +1,25 @@
+notifications:
+  email:
+    on_success: never
+language: cpp
+sudo: false
+os:
+  - osx
+env:
+  global:
+    - NINJA_STATUS="[%p %u/%t@%o %r]"
+    - PROJECT_NAME=${PWD##*/}
+  matrix:
+  - BUILD_TYPE=Debug
+  - BUILD_TYPE=Release
+before_install:
+  - brew update
+  - brew outdated cmake || brew upgrade cmake
+  - brew install cppcheck doxygen ninja
+  - brew install libwebsockets openssl
+script:
+  - export CPATH=$(brew --prefix openssl)/include
+  - mkdir $BUILD_TYPE
+  - cd $BUILD_TYPE
+  - cmake -GNinja -DCLONE_SUBPROJECTS=ON -DCMAKE_INSTALL_PREFIX=$PWD/install -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+  - ninja all && ninja $PROJECT_NAME-tests && ninja install
