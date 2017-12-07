@@ -180,7 +180,7 @@ int Channel::write(const Response& response,
     return lws_http_transaction_completed(wsi) ? -1 : 0;
 }
 
-#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#if LWS_LIBRARY_VERSION_NUMBER >= 2001000
 int Channel::writeRequestBody(const std::string& body)
 {
     // body must be pre-padded before it can be written

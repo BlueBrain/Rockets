@@ -40,7 +40,7 @@ public:
     std::future<Response> getFuture();
 
     int writeHeaders(unsigned char** buffer, const size_t size);
-#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#if LWS_LIBRARY_VERSION_NUMBER >= 2001000
     int writeBody();
 #endif
 
