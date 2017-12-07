@@ -161,7 +161,7 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* /*user*/,
         {
         case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
             return request->writeHeaders((unsigned char**)in, len);
-#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#if LWS_LIBRARY_VERSION_NUMBER >= 2001000
         case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
             return request->writeBody();
         case LWS_CALLBACK_CLOSED_CLIENT_HTTP:

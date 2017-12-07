@@ -79,7 +79,7 @@ void PollDescriptors::service(lws_context* context, const int fd,
     socket->second.revents = events;
     lws_service_fd(context, &socket->second);
 
-#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#if LWS_LIBRARY_VERSION_NUMBER >= 2001000
     // if needed, force-service wsis that may not have read all input
     while (!lws_service_adjust_timeout(context, 1, 0))
         lws_service_tsi(context, -1, 0);

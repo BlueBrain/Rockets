@@ -57,7 +57,7 @@ public:
     /* Client */
     int writeRequestHeader(const std::string& body, unsigned char** buffer,
                            size_t bufferSize);
-#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#if LWS_LIBRARY_VERSION_NUMBER >= 2001000
     int writeRequestBody(const std::string& body);
     Code readResponseCode() const;
 #endif
