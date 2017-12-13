@@ -17,36 +17,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "proxyConnectionError.h"
+#ifndef ROCKETS_PROXYCONNECTIONERROR_H
+#define ROCKETS_PROXYCONNECTIONERROR_H
 
 #include <libwebsockets.h>
 
-#include <iostream>
 #include <stdexcept>
+
+// WAR: older versions of libwebsockets did not call
+// LWS_CALLBACK_CLIENT_CONNECTION_ERROR on proxy connection error.
+// To avoid that the client waits endlessly for the connection future to be
+// ready, a proxy_connection_error is thrown from the log handler.
+
+#define PROXY_CONNECTION_ERROR_THROWS (LWS_LIBRARY_VERSION_NUMBER < 2004000)
 
 namespace rockets
 {
-namespace
+class proxy_connection_error : public std::runtime_error
 {
-const std::string proxyError = "ERROR proxy: HTTP/1.1 503 \n";
-
-void handleErrorMessage(int, const char* message)
-{
-#if PROXY_CONNECTION_ERROR_THROWS
-    if (message == proxyError)
-        throw proxy_connection_error(message);
-#endif
-
-#ifdef NDEBUG
-    (void)message;
-#else
-    std::cerr << "rockets: lws_err: " << message << std::endl;
-#endif
-}
-struct LogInitializer
-{
-    LogInitializer() { lws_set_log_level(LLL_ERR, handleErrorMessage); }
+    using runtime_error::runtime_error;
 };
-static LogInitializer silencer;
 }
-}
+
+#endif
