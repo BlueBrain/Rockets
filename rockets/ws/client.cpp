@@ -21,6 +21,7 @@
 
 #include "../clientContext.h"
 #include "../pollDescriptors.h"
+#include "../proxyConnectionError.h"
 #include "channel.h"
 #include "connection.h"
 #include "messageHandler.h"
@@ -43,6 +44,17 @@ public:
     Impl()
         : context{new ClientContext{callback_ws, this}}
     {
+    }
+
+    void tryToSetConnectionException()
+    {
+        try
+        {
+            connectionPromise.set_exception(std::current_exception());
+        }
+        catch (const std::future_error&) // promise may already be set
+        {
+        }
     }
 
     PollDescriptors pollDescriptors;
@@ -73,13 +85,7 @@ std::future<void> Client::connect(const std::string& uri,
     }
     catch (...)
     {
-        try
-        {
-            _impl->connectionPromise.set_exception(std::current_exception());
-        }
-        catch (const std::future_error&) // promise may already be set
-        {
-        }
+        _impl->tryToSetConnectionException();
     }
     return _impl->connectionPromise.get_future();
 }
@@ -111,12 +117,26 @@ void Client::_setSocketListener(SocketListener* listener)
 
 void Client::_processSocket(const SocketDescriptor fd, const int events)
 {
-    _impl->context->service(_impl->pollDescriptors, fd, events);
+    try
+    {
+        _impl->context->service(_impl->pollDescriptors, fd, events);
+    }
+    catch (const proxy_connection_error&)
+    {
+        _impl->tryToSetConnectionException();
+    }
 }
 
 void Client::_process(const int timeout_ms)
 {
-    _impl->context->service(timeout_ms);
+    try
+    {
+        _impl->context->service(timeout_ms);
+    }
+    catch (const proxy_connection_error&)
+    {
+        _impl->tryToSetConnectionException();
+    }
 }
 
 static int callback_ws(lws* wsi, lws_callback_reasons reason, void* /*user*/,
