@@ -362,6 +362,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_binary_response_to_all, F,
 
     connect(F::client1, F::server);
     connect(F::client2, F::server);
+    connect(*F::client3, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 3);
+
+    // makes sure to test that disconnected client is properly removed
+    // (crashes otherwise)
+    F::client3.reset();
+    F::processAllClients(F::server);
     BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 2);
 
     F::client1.sendBinary("foo", 3);
@@ -406,7 +413,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
     F::client3.reset();
     F::processClient3Disconnect(F::server);
     BOOST_CHECK_EQUAL(numConnections, 0);
-    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 0);
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_unspecified_format_response, F,

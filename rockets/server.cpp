@@ -284,15 +284,9 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
             impl->wsHandler.handleOpenConnection(impl->wsConnections.at(wsi));
             break;
         case LWS_CALLBACK_CLOSED:
-        {
-            // ensure that getConnectionCount() is already correct when
-            // executing the callback. c.f. service-threads in
-            // server_monitor_connections unit test
-            auto connection = std::move(impl->wsConnections.at(wsi));
+            impl->wsHandler.handleCloseConnection(impl->wsConnections.at(wsi));
             impl->closeWsConnection(wsi);
-            impl->wsHandler.handleCloseConnection(connection);
             break;
-        }
         case LWS_CALLBACK_RECEIVE:
             impl->wsHandler.handleMessage(impl->wsConnections.at(wsi),
                                           (const char*)in, len);
