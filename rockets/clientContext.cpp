@@ -23,6 +23,8 @@
 #include "ws/channel.h"
 #include "ws/connection.h"
 
+#include <string.h> // memset
+
 namespace
 {
 const char* contextInitFailure = "failed to initialize lws context";
