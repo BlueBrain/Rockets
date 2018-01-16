@@ -22,6 +22,8 @@
 #include "http/connection.h"
 #include "ws/connection.h"
 
+#include <string.h> // memset
+
 namespace rockets
 {
 ServerContext::ServerContext(const std::string& uri, const std::string& name,
