@@ -178,8 +178,8 @@ int main(int argc, char** argv)
         server.handle(http::Method::GET, "", [&page](const http::Request&) {
             return http::make_ready_response(http::Code::OK, page, "text/html");
         });
-        server.handleText([](const std::string& message) {
-            return "server echo: " + message;
+        server.handleText([](ws::Request request) {
+            return "server echo: " + request.message;
         });
 
         std::cout << "Listening on: http://" << uri << std::endl;

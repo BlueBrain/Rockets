@@ -42,7 +42,7 @@ const json methodNotFound{{"code", -32601}, {"message", "Method not found"}};
 
 json makeResponse(const std::string& result, const json& id)
 {
-    return json{{"jsonrpc", "2.0"}, {"result", result}, {"id", id}};
+    return json{{"jsonrpc", "2.0"}, {"result", json::parse(result)}, {"id", id}};
 }
 
 json makeErrorResponse(const json& error, const json& id = json())
@@ -51,7 +51,7 @@ json makeErrorResponse(const json& error, const json& id = json())
 }
 
 json makeErrorResponse(const int code, const std::string& message,
-                       const json& id = json())
+                       const json& id)
 {
     return makeErrorResponse(json{{"code", code}, {"message", message}}, id);
 }
@@ -81,22 +81,21 @@ inline bool begins_with(const std::string& string, const std::string& other)
 class Receiver::Impl
 {
 public:
-    std::string processBatchBlocking(const json& array)
+    std::string processBatchBlocking(const json& array, const uintptr_t clientID)
     {
         if (array.empty())
-            return dump(makeErrorResponse(invalidRequest));
-
-        return dump(processValidBatchBlocking(array));
+            return "";
+        return dump(processValidBatchBlocking(array, clientID));
     }
 
-    json processValidBatchBlocking(const json& array)
+    json processValidBatchBlocking(const json& array, const uintptr_t clientID)
     {
         json responses;
         for (const auto& entry : array)
         {
             if (entry.is_object())
             {
-                const auto response = processCommandBlocking(entry);
+                const auto response = processCommandBlocking(entry, clientID);
                 if (!response.is_null())
                     responses.push_back(response);
             }
@@ -106,38 +105,44 @@ public:
         return responses;
     }
 
-    json processCommandBlocking(const json& request)
+    json processCommandBlocking(const json& request, const uintptr_t clientID)
     {
         auto promise = std::make_shared<std::promise<json>>();
         auto future = promise->get_future();
         auto callback = [promise](json response) {
             promise->set_value(std::move(response));
         };
-        processCommand(request, callback);
+        processCommand(request, clientID, callback);
         return future.get();
     }
 
-    void processCommand(const json& request, std::function<void(json)> callback)
+    void processCommand(const json& request, const uintptr_t clientID, std::function<void(json)> callback)
     {
+        const auto id = request.count("id") ? request["id"] : json();
+        const bool isNotification = id.is_null();
         if (!_isValidJsonRpcRequest(request))
         {
-            callback(makeErrorResponse(invalidRequest));
+            if(isNotification)
+                callback(json());
+            else
+                callback(makeErrorResponse(invalidRequest, id));
             return;
         }
 
-        const auto id = request.count("id") ? request["id"] : json();
         const auto methodName = request["method"].get<std::string>();
-        const auto params = dump(request["params"]);
-
         const auto method = methods.find(methodName);
         if (method == methods.end())
         {
-            callback(makeErrorResponse(methodNotFound, id));
+            if(isNotification)
+                callback(json());
+            else
+                callback(makeErrorResponse(methodNotFound, id));
             return;
         }
 
+        const auto params = request.find("params") == request.end() ? "" : dump(request["params"]);
         const auto& func = method->second;
-        func(params, [callback, id](const Response rep) {
+        func({params, clientID}, [callback, id](const Response rep) {
             // No reply for valid "notifications" (requests without an "id")
             if (id.is_null())
             {
@@ -165,24 +170,24 @@ Receiver::~Receiver()
 
 void Receiver::connect(const std::string& method, VoidCallback action)
 {
-    bind(method, [action](const std::string&) {
+    bind(method, [action](const Request&) {
         action();
-        return Response{"OK"};
+        return Response{"\"OK\""};
     });
 }
 
 void Receiver::connect(const std::string& method, NotifyCallback action)
 {
-    bind(method, [action](const std::string& request) {
+    bind(method, [action](const Request& request) {
         action(request);
-        return Response{"OK"};
+        return Response{"\"OK\""};
     });
 }
 
 void Receiver::bind(const std::string& method, ResponseCallback action)
 {
     bindAsync(method,
-              [this, action](const std::string& req, AsyncResponse callback) {
+              [this, action](const Request& req, AsyncResponse callback) {
                   callback(action(req));
               });
 }
@@ -196,12 +201,12 @@ void Receiver::bindAsync(const std::string& method,
     _impl->methods[method] = action;
 }
 
-std::string Receiver::process(const std::string& request)
+std::string Receiver::process(const Request& request)
 {
     return processAsync(request).get();
 }
 
-std::future<std::string> Receiver::processAsync(const std::string& request)
+std::future<std::string> Receiver::processAsync(const Request& request)
 {
     auto promise = std::make_shared<std::promise<std::string>>();
     auto future = promise->get_future();
@@ -212,18 +217,18 @@ std::future<std::string> Receiver::processAsync(const std::string& request)
     return future;
 }
 
-void Receiver::process(const std::string& request, AsyncStringResponse callback)
+void Receiver::process(const Request& request, AsyncStringResponse callback)
 {
-    const auto document = json::parse(request, nullptr, false);
+    const auto document = json::parse(request.message, nullptr, false);
     if (document.is_object())
     {
         auto stringifyCallback = [callback](const json obj) {
             callback(dump(obj));
         };
-        _impl->processCommand(document, stringifyCallback);
+        _impl->processCommand(document, request.clientID, stringifyCallback);
     }
     else if (document.is_array())
-        callback(_impl->processBatchBlocking(document));
+        callback(_impl->processBatchBlocking(document, request.clientID));
     else
         callback(dump(makeErrorResponse(parseError)));
 }

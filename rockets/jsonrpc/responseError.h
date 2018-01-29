@@ -1,5 +1,5 @@
-/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
- *                          Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2018, EPFL/Blue Brain Project
+ *                     Daniel.Nachbaur@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -17,47 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_JSONRPC_TYPES_H
-#define ROCKETS_JSONRPC_TYPES_H
+#ifndef ROCKETS_RESPONSEERROR_H
+#define ROCKETS_RESPONSEERROR_H
 
-#include <functional>
-#include <string>
-
-#include <rockets/ws/types.h>
+#include <stdexcept>
 
 namespace rockets
 {
 namespace jsonrpc
 {
-using ws::Request;
-
-/**
- * Response to a well-formed RPC request.
- */
-struct Response
+class response_error : public std::runtime_error
 {
-    std::string result;
-    int error = 0;
+public:
+    response_error(const std::string& what, const int code_)
+        : std::runtime_error(what)
+        , code(code_)
+    {}
 
-    Response() = default;
-    Response(std::string&& res)
-        : result(res)
-    {
-    }
-    Response(std::string&& res, const int err)
-        : result(res)
-        , error{err}
-    {
-    }
-
-    static Response invalidParams() { return {"Invalid params", -32602}; }
+    const int code;
 };
-
-/** @name Asynchronous response to a request. */
-//@{
-using AsyncResponse = std::function<void(Response)>;
-using AsyncStringResponse = std::function<void(std::string)>;
-//@}
 }
 }
 

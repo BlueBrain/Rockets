@@ -41,15 +41,16 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
     if (connection.getChannel().currentMessageHasMore())
         return;
 
+    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
     const Format format = connection.getChannel().getCurrentMessageFormat();
     Response response;
     if (format == Format::text)
     {
         if (callbackText)
-            response = callbackText(std::move(_buffer));
+            response = callbackText({std::move(_buffer), clientID });
         else if (callbackTextAsync)
         {
-            callbackTextAsync(std::move(_buffer),
+            callbackTextAsync({std::move(_buffer), clientID },
                               [&connection](std::string reply)
             {
                 if (!reply.empty())
@@ -59,7 +60,9 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
         }
     }
     else if (format == Format::binary && callbackBinary)
-        response = callbackBinary(std::move(_buffer));
+        response = callbackBinary({std::move(_buffer), clientID});
+
+    _buffer.clear();
 
     if (response.format == Format::unspecified)
         response.format = format;
@@ -72,7 +75,8 @@ void MessageHandler::handleOpenConnection(Connection& connection)
     if (!callbackOpen)
         return;
 
-    auto responses = callbackOpen();
+    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
+    auto responses = callbackOpen(clientID);
     for (auto& response : responses)
         _sendResponse(response, connection);
 }
@@ -88,7 +92,8 @@ void MessageHandler::handleCloseConnection(Connection& connection)
     if (!callbackClose)
         return;
 
-    auto responses = callbackClose();
+    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
+    auto responses = callbackClose(clientID);
     for (auto& response : responses)
         _sendResponse(response, connection);
 }

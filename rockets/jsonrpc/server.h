@@ -51,8 +51,8 @@ public:
         : communicator{server}
     {
         communicator.handleText(
-            [this](std::string message, ws::ResponseCallback callback) {
-                process(std::move(message), callback);
+            [this](ws::Request request, ws::ResponseCallback callback) {
+                process(std::move(request), callback);
             });
     }
 

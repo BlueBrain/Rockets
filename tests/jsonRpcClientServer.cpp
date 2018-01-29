@@ -65,14 +65,14 @@ struct MockServerCommunicator
 
     void sendText(std::string message)
     {
-        auto ret = sendToRemoteEndpoint(message);
+        auto ret = sendToRemoteEndpoint({message});
         if (!ret.message.empty())
             handleMessageAsync(std::move(ret.message), [](std::string) {});
     }
 
     void broadcastText(const std::string& message)
     {
-        sendToRemoteEndpoint(message);
+        sendToRemoteEndpoint({message});
     }
 
     ws::MessageCallbackAsync handleMessageAsync;
@@ -133,8 +133,8 @@ struct Fixture
 BOOST_FIXTURE_TEST_CASE(client_notification_received_by_server, Fixture)
 {
     bool received = false;
-    server.connect("test", [&](const std::string& request) {
-        received = (request == simpleMessage);
+    server.connect("test", [&](const jsonrpc::Request& request) {
+        received = (request.message == simpleMessage);
     });
     client.emit("test", simpleMessage);
     BOOST_CHECK(received);
@@ -145,9 +145,9 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server, Fixture)
     bool serverReceivedRequest = false;
     bool clientReceivedReply = false;
     std::string receivedValue;
-    server.bind("test", [&](const std::string& request) {
-        serverReceivedRequest = (request == simpleMessage);
-        return jsonrpc::Response{"42"};
+    server.bind("test", [&](const jsonrpc::Request& request) {
+        serverReceivedRequest = (request.message == simpleMessage);
+        return jsonrpc::Response{"\"42\""};
     });
     client.request("test", simpleMessage, [&](jsonrpc::Response response) {
         clientReceivedReply = !response.error;
@@ -162,9 +162,9 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
 {
     bool serverReceivedRequest = false;
     std::string receivedValue;
-    server.bind("test", [&](const std::string& request) {
-        serverReceivedRequest = (request == simpleMessage);
-        return jsonrpc::Response{"42"};
+    server.bind("test", [&](const jsonrpc::Request&& request) {
+        serverReceivedRequest = (request.message == simpleMessage);
+        return jsonrpc::Response{"\"42\""};
     });
     auto future = client.request("test", simpleMessage);
     BOOST_CHECK(serverReceivedRequest);
@@ -178,8 +178,8 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
 BOOST_FIXTURE_TEST_CASE(client_notification_generates_no_response, Fixture)
 {
     bool serverReceivedRequest = false;
-    server.bind("test", [&](const std::string& request) {
-        serverReceivedRequest = (request == simpleMessage);
+    server.bind("test", [&](const jsonrpc::Request&& request) {
+        serverReceivedRequest = (request.message == simpleMessage);
         return jsonrpc::Response{"42"};
     });
     client.emit("test", simpleMessage);
@@ -190,8 +190,8 @@ BOOST_FIXTURE_TEST_CASE(client_notification_generates_no_response, Fixture)
 BOOST_FIXTURE_TEST_CASE(server_notification_received_by_client, Fixture)
 {
     bool received = false;
-    client.connect("test", [&](const std::string& request) {
-        received = (request == simpleMessage);
+    client.connect("test", [&](const jsonrpc::Request&& request) {
+        received = (request.message == simpleMessage);
     });
     server.emit("test", simpleMessage);
     BOOST_CHECK(received);

@@ -51,7 +51,26 @@ enum class Recipient
 };
 
 /**
- * A response followed after an incoming message/request.
+ * A request from a client during handleText()/handleBinary().
+ */
+struct Request
+{
+    Request(const std::string& message_, const uintptr_t clientID_ = 0)
+        : message(message_)
+        , clientID(clientID_)
+    {}
+
+    Request(std::string&& message_, const uintptr_t clientID_ = 0)
+        : message(std::move(message_))
+        , clientID(clientID_)
+    {}
+
+    std::string message;
+    const uintptr_t clientID;
+};
+
+/**
+ * A response followed after an incoming request.
  */
 struct Response
 {
@@ -79,14 +98,14 @@ struct Response
 /** Callback for asynchronously responding to a message. */
 using ResponseCallback = std::function<void(std::string)>;
 
-/** WebSocket callback for handling text / binary messages. */
-using MessageCallback = std::function<Response(std::string)>;
+/** WebSocket callback for handling requests of text / binary messages. */
+using MessageCallback = std::function<Response(Request)>;
 
-/** Callback for handling messge with delayed response. */
-using MessageCallbackAsync = std::function<void(std::string, ResponseCallback)>;
+/** Callback for handling request with delayed response. */
+using MessageCallbackAsync = std::function<void(Request, ResponseCallback)>;
 
 /** Websocket callback for handling connection (open/close) messages. */
-using ConnectionCallback = std::function<std::vector<Response>()>;
+using ConnectionCallback = std::function<std::vector<Response>(uintptr_t)>;
 }
 }
 

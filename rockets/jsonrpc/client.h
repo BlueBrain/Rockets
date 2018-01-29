@@ -49,9 +49,9 @@ public:
     Client(Communicator& comm)
         : communicator{comm}
     {
-        communicator.handleText([this](std::string message) {
-            if (!processResponse(message))
-                _processNotification(message);
+        communicator.handleText([this](const jsonrpc::Request& request) {
+            if (!processResponse(request.message))
+                _processNotification(request);
             return std::string();
         });
     }
@@ -61,9 +61,9 @@ private:
     void _sendNotification(std::string json) final { _send(std::move(json)); }
     /** Requester::_sendRequest */
     void _sendRequest(std::string json) final { _send(std::move(json)); }
-    void _processNotification(const std::string& message)
+    void _processNotification(const jsonrpc::Request& request)
     {
-        process(message, [this](std::string response) {
+        process(request, [this](std::string response) {
             // Note: response should normally be empty, as we don't expect to
             // receive requests from the server (only notifications).
             if (!response.empty())

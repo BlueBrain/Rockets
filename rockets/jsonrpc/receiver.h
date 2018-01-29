@@ -20,6 +20,7 @@
 #ifndef ROCKETS_JSONRPC_RECEIVER_H
 #define ROCKETS_JSONRPC_RECEIVER_H
 
+#include <rockets/jsonrpc/responseError.h>
 #include <rockets/jsonrpc/types.h>
 
 #include <future>
@@ -40,10 +41,10 @@ public:
     /** @name Callbacks that can be registered. */
     //@{
     using VoidCallback = std::function<void()>;
-    using NotifyCallback = std::function<void(const std::string&)>;
-    using ResponseCallback = std::function<Response(const std::string&)>;
+    using NotifyCallback = std::function<void(Request)>;
+    using ResponseCallback = std::function<Response(Request)>;
     using DelayedResponseCallback =
-        std::function<void(const std::string&, AsyncResponse)>;
+        std::function<void(Request, AsyncResponse)>;
     //@}
 
     /** Constructor. */
@@ -89,12 +90,12 @@ public:
     template <typename Params>
     void connect(const std::string& method, std::function<void(Params)> action)
     {
-        bind(method, [action](const std::string& request) {
+        bind(method, [action](const Request& request) {
             Params params;
-            if (!from_json(params, request))
+            if (!from_json(params, request.message))
                 return Response::invalidParams();
             action(std::move(params));
-            return Response{"OK"};
+            return Response{"\"OK\""};
         });
     }
 
@@ -120,11 +121,43 @@ public:
     template <typename Params>
     void bind(const std::string& method, std::function<Response(Params)> action)
     {
-        bind(method, [action](const std::string& request) {
+        bind(method, [action](const Request& request) {
             Params params;
-            if (!from_json(params, request))
+            if (!from_json(params, request.message))
                 return Response::invalidParams();
             return action(std::move(params));
+        });
+    }
+
+    /**
+     * Bind a method to a response callback with templated request parameters
+     * and templated return type. The response callback can throw an exception
+     * of type response_error to indicate errors.
+     *
+     * The parameters object must be deserializable by a free function:
+     * from_json(Params& object, const std::string& json). The return type must
+     * be serializable by a free function: std::string to_json(const RetVal&)
+     *
+     * @param method to register.
+     * @param action to perform.
+     * @throw std::invalid_argument if the method name starts with "rpc."
+     */
+    template <typename Params, typename RetVal>
+    void bind(const std::string& method, std::function<RetVal(Params)> action)
+    {
+        bind(method, [action](const Request& request) {
+            Params params;
+            if (!from_json(params, request.message))
+                return Response::invalidParams();
+            try
+            {
+                const auto& ret = action(std::move(params));
+                return Response{to_json(ret)};
+            }
+            catch (const response_error& e)
+            {
+                return Response{e.what(), e.code};
+            }
         });
     }
 
@@ -152,9 +185,9 @@ public:
                    std::function<void(Params, AsyncResponse)> action)
     {
         bindAsync(method,
-                  [action](const std::string& request, AsyncResponse callback) {
+                  [action](const Request& request, AsyncResponse callback) {
                       Params params;
-                      if (from_json(params, request))
+                      if (from_json(params, request.message))
                           action(std::move(params), callback);
                       else
                           callback(Response::invalidParams());
@@ -164,27 +197,27 @@ public:
     /**
      * Process a JSON-RPC request and block for the result.
      *
-     * @param request string in JSON-RPC 2.0 format.
+     * @param request Request object with message in JSON-RPC 2.0 format.
      * @return json response string in JSON-RPC 2.0 format.
      */
-    std::string process(const std::string& request);
+    std::string process(const Request& request);
 
     /**
      * Process a JSON-RPC request asynchronously.
      *
-     * @param request string in JSON-RPC 2.0 format.
+     * @param request Request object with message in JSON-RPC 2.0 format.
      * @return future json response string in JSON-RPC 2.0 format.
      */
-    std::future<std::string> processAsync(const std::string& request);
+    std::future<std::string> processAsync(const Request& request);
 
     /**
      * Process a JSON-RPC request asynchronously.
      *
-     * @param request string in JSON-RPC 2.0 format.
+     * @param request Request object with message in JSON-RPC 2.0 format.
      * @param callback that return a json response string in JSON-RPC 2.0
      *        format upon request completion.
      */
-    void process(const std::string& request, AsyncStringResponse callback);
+    void process(const Request& request, AsyncStringResponse callback);
 
 private:
     class Impl;
