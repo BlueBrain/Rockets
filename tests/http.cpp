@@ -267,10 +267,15 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(issue157, F, Fixtures, F)
     F::server.handle(F::foo.getEndpoint(), F::foo);
 
     bool running = true;
-    std::thread thread([&]() {
-        while (running)
-            F::server.process(100);
-    });
+    std::thread thread;
+
+    if (F::server.getThreadCount() == 0)
+    {
+        thread = std::thread([&]() {
+            while (running)
+                F::server.process(100);
+        });
+    }
 
     // Close client before receiving request to provoke
     // https://github.com/HBPVIS/ZeroEQ/issues/157
@@ -280,7 +285,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(issue157, F, Fixtures, F)
     }
 
     running = false;
-    thread.join();
+    if (F::server.getThreadCount() == 0)
+        thread.join();
+}
+
+BOOST_AUTO_TEST_CASE(no_process_with_service_threads)
+{
+    Server server{1u};
+    BOOST_CHECK_THROW(server.process(100), std::logic_error);
 }
 
 #if CLIENT_SUPPORTS_REQ_PAYLOAD

@@ -58,12 +58,14 @@ struct Request
     Request(const std::string& message_, const uintptr_t clientID_ = 0)
         : message(message_)
         , clientID(clientID_)
-    {}
+    {
+    }
 
     Request(std::string&& message_, const uintptr_t clientID_ = 0)
         : message(std::move(message_))
         , clientID(clientID_)
-    {}
+    {
+    }
 
     std::string message;
     const uintptr_t clientID;

@@ -178,8 +178,12 @@ public:
     /** Broadcast a text message to all websocket clients. */
     ROCKETS_API void broadcastText(const std::string& message);
 
-    /** Broadcast a text message to all websocket clients, except the filtered ones. */
-    ROCKETS_API void broadcastText(const std::string& message, std::set<uintptr_t> filter);
+    /**
+     * Broadcast a text message to all websocket clients, except the filtered
+     * ones.
+     */
+    ROCKETS_API void broadcastText(const std::string& message,
+                                   const std::set<uintptr_t>& filter);
 
     /** Broadcast a binary message to all websocket clients. */
     ROCKETS_API void broadcastBinary(const char* data, size_t size);

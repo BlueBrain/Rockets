@@ -42,7 +42,9 @@ const json methodNotFound{{"code", -32601}, {"message", "Method not found"}};
 
 json makeResponse(const std::string& result, const json& id)
 {
-    return json{{"jsonrpc", "2.0"}, {"result", json::parse(result)}, {"id", id}};
+    return json{{"jsonrpc", "2.0"},
+                {"result", json::parse(result)},
+                {"id", id}};
 }
 
 json makeErrorResponse(const json& error, const json& id = json())
@@ -81,7 +83,8 @@ inline bool begins_with(const std::string& string, const std::string& other)
 class Receiver::Impl
 {
 public:
-    std::string processBatchBlocking(const json& array, const uintptr_t clientID)
+    std::string processBatchBlocking(const json& array,
+                                     const uintptr_t clientID)
     {
         if (array.empty())
             return "";
@@ -116,13 +119,14 @@ public:
         return future.get();
     }
 
-    void processCommand(const json& request, const uintptr_t clientID, std::function<void(json)> callback)
+    void processCommand(const json& request, const uintptr_t clientID,
+                        std::function<void(json)> callback)
     {
         const auto id = request.count("id") ? request["id"] : json();
         const bool isNotification = id.is_null();
         if (!_isValidJsonRpcRequest(request))
         {
-            if(isNotification)
+            if (isNotification)
                 callback(json());
             else
                 callback(makeErrorResponse(invalidRequest, id));
@@ -133,28 +137,32 @@ public:
         const auto method = methods.find(methodName);
         if (method == methods.end())
         {
-            if(isNotification)
+            if (isNotification)
                 callback(json());
             else
                 callback(makeErrorResponse(methodNotFound, id));
             return;
         }
 
-        const auto params = request.find("params") == request.end() ? "" : dump(request["params"]);
+        const auto params = request.find("params") == request.end()
+                                ? ""
+                                : dump(request["params"]);
         const auto& func = method->second;
-        func({params, clientID}, [callback, id](const Response rep) {
-            // No reply for valid "notifications" (requests without an "id")
-            if (id.is_null())
-            {
-                callback(json());
-                return;
-            }
+        func({params, clientID},
+             [callback, id](const Response rep) {
+                 // No reply for valid "notifications" (requests without an
+                 // "id")
+                 if (id.is_null())
+                 {
+                     callback(json());
+                     return;
+                 }
 
-            if (rep.error != 0)
-                callback(makeErrorResponse(rep.error, rep.result, id));
-            else
-                callback(makeResponse(rep.result, id));
-        });
+                 if (rep.error != 0)
+                     callback(makeErrorResponse(rep.error, rep.result, id));
+                 else
+                     callback(makeResponse(rep.result, id));
+             });
     }
     std::map<std::string, Receiver::DelayedResponseCallback> methods;
 };
