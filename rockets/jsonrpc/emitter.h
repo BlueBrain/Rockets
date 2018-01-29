@@ -72,7 +72,6 @@ public:
         return makeNotification(method, to_json(params));
     }
 
-
 private:
     virtual void _sendNotification(std::string json) = 0;
 };

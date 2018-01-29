@@ -32,7 +32,8 @@ public:
     response_error(const std::string& what, const int code_)
         : std::runtime_error(what)
         , code(code_)
-    {}
+    {
+    }
 
     const int code;
 };

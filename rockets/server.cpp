@@ -75,10 +75,8 @@ public:
 
     void handleBroadcastRequest()
     {
-        if (serviceThreadPool)
-            return;
-
-        context->requestBroadcast();
+        if (wsBroadcast)
+            context->requestBroadcast();
         wsBroadcast = false;
     }
 
@@ -195,12 +193,14 @@ void Server::broadcastText(const std::string& message)
     _impl->requestBroadcast();
 }
 
-void Server::broadcastText(const std::string &message, std::set<uintptr_t> filter)
+void Server::broadcastText(const std::string& message,
+                           const std::set<uintptr_t>& filter)
 {
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
     for (auto& connection : _impl->wsConnections)
     {
-        if(filter.find(reinterpret_cast<uintptr_t>(&connection.second)) == filter.end())
+        auto i = filter.find(reinterpret_cast<uintptr_t>(&connection.second));
+        if (i == filter.end())
             connection.second.enqueueText(message);
     }
     _impl->requestBroadcast();
@@ -232,6 +232,8 @@ void Server::_processSocket(const SocketDescriptor fd, const int events)
 
 void Server::_process(const int timeout_ms)
 {
+    if (_impl->serviceThreadPool)
+        throw std::logic_error("No process() when using service threads");
     _impl->handleBroadcastRequest();
     _impl->context->service(timeout_ms);
 }

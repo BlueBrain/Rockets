@@ -43,8 +43,7 @@ public:
     using VoidCallback = std::function<void()>;
     using NotifyCallback = std::function<void(Request)>;
     using ResponseCallback = std::function<Response(Request)>;
-    using DelayedResponseCallback =
-        std::function<void(Request, AsyncResponse)>;
+    using DelayedResponseCallback = std::function<void(Request, AsyncResponse)>;
     //@}
 
     /** Constructor. */

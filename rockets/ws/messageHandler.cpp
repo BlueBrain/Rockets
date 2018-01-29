@@ -47,15 +47,14 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
     if (format == Format::text)
     {
         if (callbackText)
-            response = callbackText({std::move(_buffer), clientID });
+            response = callbackText({std::move(_buffer), clientID});
         else if (callbackTextAsync)
         {
-            callbackTextAsync({std::move(_buffer), clientID },
-                              [&connection](std::string reply)
-            {
-                if (!reply.empty())
-                    connection.sendText(std::move(reply));
-            });
+            callbackTextAsync({std::move(_buffer), clientID},
+                              [&connection](std::string reply) {
+                                  if (!reply.empty())
+                                      connection.sendText(std::move(reply));
+                              });
             return;
         }
     }

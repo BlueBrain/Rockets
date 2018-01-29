@@ -272,7 +272,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_text_message, F, Fixtures, F)
     BOOST_CHECK(F::receivedReply2);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_filtered_text_message, F, Fixtures, F)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_filtered_text_message, F,
+                                 Fixtures, F)
 {
     F::client1.handleText([&](const ws::Request& request) {
         BOOST_REQUIRE(request.message == "hello");
