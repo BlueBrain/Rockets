@@ -54,6 +54,25 @@ public:
         emit(method, to_json(params));
     }
 
+    /** @return a JSON RPC notification for the given method. */
+    std::string makeNotification(const std::string& method) const;
+
+    /** @return a JSON RPC notification for the given method and params. */
+    std::string makeNotification(const std::string& method,
+                                 const std::string& params) const;
+
+    /**
+     * @return a JSON RPC notification for the given method and templated
+     *         params.
+     */
+    template <typename Params>
+    std::string makeNotification(const std::string& method,
+                                 const Params& params) const
+    {
+        return makeNotification(method, to_json(params));
+    }
+
+
 private:
     virtual void _sendNotification(std::string json) = 0;
 };

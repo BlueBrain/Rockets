@@ -169,12 +169,12 @@ using Fixtures = boost::mpl::vector<Fixture0, Fixture1, Fixture2>;
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_text_message, F, Fixtures, F)
 {
-    F::server.handleText([&](const std::string& message) {
-        F::receivedMessage1 = (message == "hello");
+    F::server.handleText([&](const ws::Request& request) {
+        F::receivedMessage1 = (request.message == "hello");
         return "server";
     });
-    F::client1.handleText([&](const std::string& message) {
-        F::receivedReply1 = (message == "server");
+    F::client1.handleText([&](const ws::Request& request) {
+        F::receivedReply1 = (request.message == "server");
         return "";
     });
 
@@ -190,13 +190,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_text_message, F, Fixtures, F)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_binary_message, F, Fixtures, F)
 {
-    F::server.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::server.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage1 = true;
         return "server";
     });
-    F::client1.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "server");
+    F::client1.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "server");
         F::receivedReply1 = true;
         return "";
     });
@@ -216,13 +216,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_large_binary_message, F, Fixtures,
 {
     const std::string big(1024 * 1024 * 2, 'a');
 
-    F::server.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message.size() == big.size());
+    F::server.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message.size() == big.size());
         F::receivedMessage1 = true;
         return "server";
     });
-    F::client1.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "server");
+    F::client1.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "server");
         F::receivedReply1 = true;
         return "";
     });
@@ -239,20 +239,20 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(client_send_large_binary_message, F, Fixtures,
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_text_message, F, Fixtures, F)
 {
-    F::client1.handleText([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::client1.handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage1 = true;
         return "client1";
     });
-    F::client2.handleText([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::client2.handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage2 = true;
         return "client2";
     });
-    F::server.handleText([&](const std::string& message) {
-        if (message == "client1")
+    F::server.handleText([&](const ws::Request& request) {
+        if (request.message == "client1")
             F::receivedReply1 = true;
-        else if (message == "client2")
+        else if (request.message == "client2")
             F::receivedReply2 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -272,22 +272,63 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_text_message, F, Fixtures, F)
     BOOST_CHECK(F::receivedReply2);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_binary, F, Fixtures, F)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_filtered_text_message, F, Fixtures, F)
 {
-    F::client1.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::client1.handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage1 = true;
         return "client1";
     });
-    F::client2.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::client2.handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage2 = true;
         return "client2";
     });
-    F::server.handleBinary([&](const std::string& message) {
-        if (message == "client1")
+
+    std::set<uintptr_t> filteredClient;
+    F::server.handleOpen([&](const uintptr_t clientID) {
+        filteredClient.insert(clientID);
+        return std::vector<ws::Response>{{""}};
+    });
+    F::server.handleText([&](const ws::Request& request) {
+        if (request.message == "client1")
             F::receivedReply1 = true;
-        else if (message == "client2")
+        else if (request.message == "client2")
+            F::receivedReply2 = true;
+        else
+            BOOST_REQUIRE(!"valid message");
+        return "";
+    });
+
+    connect(F::client1, F::server);
+    connect(F::client2, F::server);
+    BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 2);
+
+    F::server.broadcastText("hello", filteredClient);
+    F::processAllClients(F::server);
+
+    BOOST_CHECK(!F::receivedMessage1);
+    BOOST_CHECK(!F::receivedMessage2);
+    BOOST_CHECK(!F::receivedReply1);
+    BOOST_CHECK(!F::receivedReply2);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_binary, F, Fixtures, F)
+{
+    F::client1.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
+        F::receivedMessage1 = true;
+        return "client1";
+    });
+    F::client2.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
+        F::receivedMessage2 = true;
+        return "client2";
+    });
+    F::server.handleBinary([&](const ws::Request& request) {
+        if (request.message == "client1")
+            F::receivedReply1 = true;
+        else if (request.message == "client2")
             F::receivedReply2 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -310,18 +351,18 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_broadcast_binary, F, Fixtures, F)
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_text_response_to_others, F,
                                  Fixtures, F)
 {
-    F::client2.handleText([&](const std::string& message) {
-        BOOST_REQUIRE(message == "hello");
+    F::client2.handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "hello");
         F::receivedMessage2 = true;
         return "client2";
     });
-    F::server.handleText([&](const std::string& message) {
-        if (message == "client1")
+    F::server.handleText([&](const ws::Request& request) {
+        if (request.message == "client1")
         {
             F::receivedReply1 = true;
             return ws::Response{"hello", ws::Recipient::others};
         }
-        else if (message == "client2")
+        else if (request.message == "client2")
             F::receivedReply2 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -342,18 +383,18 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_text_response_to_others, F,
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_send_binary_response_to_all, F,
                                  Fixtures, F)
 {
-    F::client1.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "bar");
+    F::client1.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "bar");
         F::receivedMessage1 = true;
         return "";
     });
-    F::client2.handleBinary([&](const std::string& message) {
-        BOOST_REQUIRE(message == "bar");
+    F::client2.handleBinary([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "bar");
         F::receivedMessage2 = true;
         return "";
     });
-    F::server.handleBinary([&](const std::string& message) {
-        if (message == "foo")
+    F::server.handleBinary([&](const ws::Request& request) {
+        if (request.message == "foo")
             F::receivedReply1 = true;
         else
             BOOST_REQUIRE(!"valid message");
@@ -384,20 +425,20 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
 {
     short numConnections = 0;
 
-    F::client3->handleText([&](const std::string& message) {
-        BOOST_REQUIRE(message == "Connect");
+    F::client3->handleText([&](const ws::Request& request) {
+        BOOST_REQUIRE(request.message == "Connect");
         F::receivedConnectReply = true;
         return "";
     });
 
-    F::server.handleOpen([&] {
+    F::server.handleOpen([&](const uintptr_t) {
         ++numConnections;
         F::receivedConnect = true;
         return std::vector<ws::Response>{
             {"Connect", ws::Recipient::sender, ws::Format::text}};
     });
 
-    F::server.handleClose([&] {
+    F::server.handleClose([&](const uintptr_t) {
         --numConnections;
         F::receivedDisconnect = true;
         return std::vector<ws::Response>{};
@@ -418,17 +459,17 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_unspecified_format_response, F,
                                  Fixtures, F)
 {
-    F::server.handleOpen([&] {
+    F::server.handleOpen([&](const uintptr_t) {
         F::receivedConnect = true;
         return std::vector<ws::Response>{
             {"unspecified format", ws::Recipient::sender}};
     });
 
-    F::client3->handleText([&](const std::string&) {
+    F::client3->handleText([&](const ws::Request&) {
         F::receivedConnectReply = true;
         return "";
     });
-    F::client3->handleBinary([&](const std::string&) {
+    F::client3->handleBinary([&](const ws::Request&) {
         F::receivedConnectReply = true;
         return "";
     });
@@ -436,4 +477,36 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_unspecified_format_response, F,
     connect(*F::client3, F::server);
     BOOST_CHECK(F::receivedConnect);
     BOOST_CHECK(!F::receivedConnectReply);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(text_binary_exchange_with_unhandled_binary, F,
+                                 Fixtures, F)
+{
+    F::client1.handleText([&](const ws::Request& request) {
+        BOOST_CHECK_EQUAL(request.message, "bla");
+        return "";
+    });
+
+    connect(F::client1, F::server);
+
+    F::server.broadcastText("bla");
+    F::server.broadcastBinary("hello", 5);
+    F::server.broadcastText("bla");
+    F::processAllClients(F::server);
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(text_binary_exchange_with_unhandled_text, F,
+                                 Fixtures, F)
+{
+    F::client1.handleBinary([&](const ws::Request& request) {
+        BOOST_CHECK_EQUAL(request.message, "hello");
+        return "";
+    });
+
+    connect(F::client1, F::server);
+
+    F::server.broadcastBinary("hello", 5);
+    F::server.broadcastText("bla");
+    F::server.broadcastBinary("hello", 5);
+    F::processAllClients(F::server);
 }

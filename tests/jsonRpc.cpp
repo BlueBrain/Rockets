@@ -76,8 +76,11 @@ const std::string substractBatchMixed{
         {"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 3},
         {"jsonrpc": "2.0", "method": "subtract", "params": [42, 23]}])"};
 
-const std::string invalidRequest{
+const std::string invalidNotification{
     R"({"jsonrpc": "2.0", "method": 1, "params": "bar"})"};
+
+const std::string invalidRequest{
+    R"({"jsonrpc": "2.0", "method": 1, "params": "bar", "id": 6})"};
 
 const std::string invalidJsonRpcVersionRequest{
     R"({"jsonrpc": "3.5", "method": "subtract", "params": [42, 23], "id": 3})"};
@@ -86,14 +89,14 @@ const std::string substractResult{
     R"({
     "id": 3,
     "jsonrpc": "2.0",
-    "result": "19"
+    "result": 19
 })"};
 
 const std::string substractResultStringId{
     R"({
     "id": "myId123",
     "jsonrpc": "2.0",
-    "result": "19"
+    "result": 19
 })"};
 
 const std::string connectStandardReply{
@@ -108,12 +111,12 @@ const std::string substractBatchResult{
     {
         "id": 1,
         "jsonrpc": "2.0",
-        "result": "19"
+        "result": 19
     },
     {
         "id": 3,
         "jsonrpc": "2.0",
-        "result": "19"
+        "result": 19
     }
 ])"};
 
@@ -143,7 +146,17 @@ const std::string invalidRequestResult{
         "code": -32600,
         "message": "Invalid Request"
     },
-    "id": null,
+    "id": 6,
+    "jsonrpc": "2.0"
+})"};
+
+const std::string invalidJsonRpcVersionResult{
+    R"({
+    "error": {
+        "code": -32600,
+        "message": "Invalid Request"
+    },
+    "id": 3,
     "jsonrpc": "2.0"
 })"};
 
@@ -200,9 +213,9 @@ const std::string invalidBatch3RequestResult{
 
 using namespace rockets;
 
-jsonrpc::Response substractObj(const std::string& params)
+jsonrpc::Response substractObj(const jsonrpc::Request& request)
 {
-    const auto object = nlohmann::json::parse(params);
+    const auto object = nlohmann::json::parse(request.message);
 
     if (!object.count("minuend") || !object["minuend"].is_number() ||
         !object.count("subtrahend") || !object["subtrahend"].is_number())
@@ -213,9 +226,9 @@ jsonrpc::Response substractObj(const std::string& params)
     return {std::to_string(value)};
 }
 
-jsonrpc::Response substractArr(const std::string& params)
+jsonrpc::Response substractArr(const jsonrpc::Request& request)
 {
-    const auto array = nlohmann::json::parse(params);
+    const auto array = nlohmann::json::parse(request.message);
 
     if (array.size() != 2 || !array[0].is_number() || !array[1].is_number())
         return jsonrpc::Response::invalidParams();
@@ -224,12 +237,12 @@ jsonrpc::Response substractArr(const std::string& params)
     return {std::to_string(value)};
 }
 
-void substractArrAsync(const std::string& params,
+void substractArrAsync(const jsonrpc::Request& request,
                        jsonrpc::AsyncResponse callback)
 {
-    std::thread([params, callback]() {
+    std::thread([request, callback]() {
         usleep(500);
-        callback(substractArr(params));
+        callback(substractArr(request));
     }).detach();
 }
 
@@ -288,15 +301,20 @@ BOOST_FIXTURE_TEST_CASE(process_notification, Fixture)
     bool called = false;
     jsonrpc::Response response;
     jsonrpc::Receiver::ResponseCallback action =
-        [&called, &response](const std::string& params) {
+        [&called, &response](const jsonrpc::Request& request) {
             called = true;
-            response = substractArr(params);
+            response = substractArr(request);
             return response;
         };
     jsonRpc.bind("subtract", action);
     BOOST_CHECK(jsonRpc.process(substractNotification).empty());
     BOOST_CHECK(called);
     BOOST_CHECK_EQUAL(response.result, "19");
+}
+
+BOOST_FIXTURE_TEST_CASE(process_unhandled_notification, Fixture)
+{
+    BOOST_CHECK(jsonRpc.process(substractNotification).empty());
 }
 
 BOOST_FIXTURE_TEST_CASE(bind_with_params, Fixture)
@@ -339,7 +357,7 @@ BOOST_FIXTURE_TEST_CASE(reserved_method_names, Fixture)
     BOOST_CHECK_THROW(jsonRpc.bind("rpc.xyz", bindFunc), std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.bindAsync("rpc.abc", bindAsyncFunc),
                       std::invalid_argument);
-    BOOST_CHECK_THROW(jsonRpc.connect("rpc.", [](const std::string&) {}),
+    BOOST_CHECK_THROW(jsonRpc.connect("rpc.", [](const jsonrpc::Request&) {}),
                       std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.connect("rpc.void", [] {}),
                       std::invalid_argument);
@@ -357,17 +375,23 @@ BOOST_FIXTURE_TEST_CASE(non_existant_method, Fixture)
 BOOST_FIXTURE_TEST_CASE(invalid_json, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
-    BOOST_CHECK_EQUAL(jsonRpc.process("Zorgy!!"), invalidJsonResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process({"Zorgy!!"}), invalidJsonResult);
 }
 
-BOOST_FIXTURE_TEST_CASE(invalid_json_rpc_request, Fixture)
+BOOST_FIXTURE_TEST_CASE(invalid_json_rpc_version, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
     BOOST_CHECK_EQUAL(jsonRpc.process(invalidJsonRpcVersionRequest),
-                      invalidRequestResult);
+                      invalidJsonRpcVersionResult);
 }
 
-BOOST_FIXTURE_TEST_CASE(wrong_json_rpc_version, Fixture)
+BOOST_FIXTURE_TEST_CASE(wrong_json_rpc_notification, Fixture)
+{
+    jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
+    BOOST_CHECK_EQUAL(jsonRpc.process(invalidNotification), "");
+}
+
+BOOST_FIXTURE_TEST_CASE(wrong_json_rpc_request, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
     BOOST_CHECK_EQUAL(jsonRpc.process(invalidRequest), invalidRequestResult);
@@ -376,11 +400,11 @@ BOOST_FIXTURE_TEST_CASE(wrong_json_rpc_version, Fixture)
 BOOST_FIXTURE_TEST_CASE(invalid_array_requests, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
-    BOOST_CHECK_EQUAL(jsonRpc.process("[\"Zorgy!\": 1]"), invalidJsonResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process({"[\"Zorgy!\": 1]"}), invalidJsonResult);
 
-    BOOST_CHECK_EQUAL(jsonRpc.process("[]"), invalidRequestResult);
-    BOOST_CHECK_EQUAL(jsonRpc.process("[1]"), invalidBatch1RequestResult);
-    BOOST_CHECK_EQUAL(jsonRpc.process("[1,2,3]"), invalidBatch3RequestResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process({"[]"}), "");
+    BOOST_CHECK_EQUAL(jsonRpc.process({"[1]"}), invalidBatch1RequestResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process({"[1,2,3]"}), invalidBatch3RequestResult);
 }
 
 BOOST_FIXTURE_TEST_CASE(valid_array_request, Fixture)
@@ -396,9 +420,9 @@ BOOST_FIXTURE_TEST_CASE(process_array_notification, Fixture)
     int called = 0;
     jsonrpc::Response response;
     jsonrpc::Receiver::ResponseCallback action =
-        [&called, &response](const std::string& params) {
+        [&called, &response](const jsonrpc::Request& request) {
             ++called;
-            response = substractArr(params);
+            response = substractArr(request);
             return response;
         };
     jsonRpc.bind("subtract", action);
@@ -412,9 +436,9 @@ BOOST_FIXTURE_TEST_CASE(process_array_mixed, Fixture)
     // For mixed notifications/requests batches, only respond to requests.
     int called = 0;
     jsonrpc::Response response;
-    auto action = [&called, &response](const std::string& params) {
+    auto action = [&called, &response](const jsonrpc::Request& request) {
         ++called;
-        response = substractArr(params);
+        response = substractArr(request);
         return response;
     };
     jsonRpc.bind("subtract", jsonrpc::Receiver::ResponseCallback(action));
