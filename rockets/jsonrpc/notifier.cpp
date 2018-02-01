@@ -17,22 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_TYPES_H
-#define ROCKETS_TYPES_H
+#include "notifier.h"
 
-#include <functional>
-#include <future>
+#include "helpers.h"
 
 namespace rockets
 {
-class Server;
-class SocketListener;
-
-#ifdef WIN32
-typedef SOCKET SocketDescriptor;
-#else
-typedef int SocketDescriptor;
-#endif
+namespace jsonrpc
+{
+void Notifier::notify(const std::string& method, const std::string& params)
+{
+    _send(params.empty() ? makeNotification(method)
+                         : makeNotification(method, params));
 }
-
-#endif
+}
+}

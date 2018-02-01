@@ -23,15 +23,14 @@ namespace rockets
 {
 namespace http
 {
-RequestHandler::RequestHandler(Channel&& channel_, std::string body_)
+RequestHandler::RequestHandler(Channel&& channel_, std::string body_,
+                               std::function<void(Response)> callback_,
+                               std::function<void(std::string)> errorCallback_)
     : channel{std::move(channel_)}
     , body{std::move(body_)}
+    , callback{std::move(callback_)}
+    , errorCallback{std::move(errorCallback_)}
 {
-}
-
-std::future<Response> RequestHandler::getFuture()
-{
-    return promise.get_future();
 }
 
 int RequestHandler::writeHeaders(unsigned char** buffer, const size_t size)
@@ -62,12 +61,14 @@ void RequestHandler::appendToResponseBody(const char* data, const size_t size)
 
 void RequestHandler::finish()
 {
-    promise.set_value(std::move(response));
+    if (callback)
+        callback(std::move(response));
 }
 
-void RequestHandler::abort(std::runtime_error&& e)
+void RequestHandler::abort(std::string&& errorMessage)
 {
-    promise.set_exception(std::make_exception_ptr(e));
+    if (errorCallback)
+        errorCallback(std::move(errorMessage));
 }
 
 bool RequestHandler::hasResponseBody() const

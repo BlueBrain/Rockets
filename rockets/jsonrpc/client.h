@@ -20,7 +20,6 @@
 #ifndef ROCKETS_JSONRPC_CLIENT_H
 #define ROCKETS_JSONRPC_CLIENT_H
 
-#include <rockets/jsonrpc/emitter.h>
 #include <rockets/jsonrpc/receiver.h>
 #include <rockets/jsonrpc/requester.h>
 
@@ -43,7 +42,7 @@ namespace jsonrpc
  *   notifications.
  */
 template <typename Communicator>
-class Client : public Emitter, public Receiver, public Requester
+class Client : public Requester, public Receiver
 {
 public:
     Client(Communicator& comm)
@@ -57,23 +56,20 @@ public:
     }
 
 private:
-    /** Emitter::_sendNotification */
-    void _sendNotification(std::string json) final { _send(std::move(json)); }
-    /** Requester::_sendRequest */
-    void _sendRequest(std::string json) final { _send(std::move(json)); }
+    /** Emitter::_send */
+    void _send(std::string json) final
+    {
+        communicator.sendText(std::move(json));
+    }
+
     void _processNotification(const jsonrpc::Request& request_)
     {
         process(request_, [this](std::string response) {
             // Note: response should normally be empty, as we don't expect to
             // receive requests from the server (only notifications).
             if (!response.empty())
-                _send(std::move(response));
+                communicator.sendText(std::move(response));
         });
-    }
-
-    void _send(std::string&& message)
-    {
-        communicator.sendText(std::move(message));
     }
 
     Communicator& communicator;

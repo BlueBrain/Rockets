@@ -21,6 +21,7 @@
 #define ROCKETS_JSONRPC_REQUESTER_H
 
 #include <rockets/jsonrpc/responseError.h>
+#include <rockets/jsonrpc/notifier.h>
 #include <rockets/jsonrpc/types.h>
 
 #include <future>
@@ -33,7 +34,7 @@ namespace jsonrpc
 /**
  * Emitter of JSON-RPC requests.
  */
-class Requester
+class Requester : public Notifier
 {
 public:
     virtual ~Requester() = default;
@@ -43,7 +44,7 @@ public:
      *
      * @param method to call.
      * @param params for the request in json format (optional).
-     * @return future result, including a possible error code.
+     * @return future result, can contain a possible error code, but not throw.
      */
     std::future<Response> request(const std::string& method,
                                   const std::string& params);
@@ -104,8 +105,6 @@ protected:
     bool processResponse(const std::string& json);
 
 private:
-    virtual void _sendRequest(std::string json) = 0;
-
     std::map<size_t, AsyncResponse> pendingRequests;
     size_t lastId = 0u;
 };

@@ -25,6 +25,8 @@
 
 #include <lws_config.h>
 
+#include <functional>
+
 namespace rockets
 {
 namespace http
@@ -35,9 +37,9 @@ namespace http
 class RequestHandler
 {
 public:
-    RequestHandler(Channel&& channel, std::string body);
-
-    std::future<Response> getFuture();
+    RequestHandler(Channel&& channel, std::string body,
+                   std::function<void(http::Response)> callback,
+                   std::function<void(std::string)> errorCallback);
 
     int writeHeaders(unsigned char** buffer, const size_t size);
 #if LWS_LIBRARY_VERSION_NUMBER >= 2001000
@@ -49,12 +51,13 @@ public:
     void appendToResponseBody(const char* data, const size_t size);
 
     void finish();
-    void abort(std::runtime_error&& e);
+    void abort(std::string&& errorMessage);
 
 private:
     Channel channel;
     std::string body;
-    std::promise<Response> promise;
+    std::function<void(Response)> callback;
+    std::function<void(std::string)> errorCallback;
     Response response;
     size_t responseLength = 0;
 };

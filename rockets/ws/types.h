@@ -72,7 +72,7 @@ struct Request
 };
 
 /**
- * A response followed after an incoming request.
+ * A response to an incoming request.
  */
 struct Response
 {

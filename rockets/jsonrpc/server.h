@@ -20,7 +20,7 @@
 #ifndef ROCKETS_JSONRPC_SERVER_H
 #define ROCKETS_JSONRPC_SERVER_H
 
-#include <rockets/jsonrpc/emitter.h>
+#include <rockets/jsonrpc/notifier.h>
 #include <rockets/jsonrpc/receiver.h>
 #include <rockets/ws/types.h>
 
@@ -44,7 +44,7 @@ namespace jsonrpc
  *   coming from the client(s).
  */
 template <typename ServerT>
-class Server : public Emitter, public Receiver
+class Server : public Notifier, public Receiver
 {
 public:
     Server(ServerT& server)
@@ -57,8 +57,8 @@ public:
     }
 
 private:
-    /** Emitter::_sendNotification */
-    void _sendNotification(std::string json) final
+    /** Emitter::_send */
+    void _send(std::string json) final
     {
         communicator.broadcastText(std::move(json));
     }

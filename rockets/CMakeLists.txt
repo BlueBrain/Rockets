@@ -36,7 +36,9 @@ set(ROCKETS_PUBLIC_HEADERS
   http/response.h
   http/types.h
   jsonrpc/client.h
-  jsonrpc/emitter.h
+  jsonrpc/helpers.h
+  jsonrpc/http.h
+  jsonrpc/notifier.h
   jsonrpc/receiver.h
   jsonrpc/requester.h
   jsonrpc/response.h
@@ -82,7 +84,8 @@ set(ROCKETS_SOURCES
   http/registry.cpp
   http/requestHandler.cpp
   http/utils.cpp
-  jsonrpc/emitter.cpp
+  jsonrpc/helpers.cpp
+  jsonrpc/notifier.cpp
   jsonrpc/receiver.cpp
   jsonrpc/requester.cpp
   ws/channel.cpp
