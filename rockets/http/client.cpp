@@ -63,9 +63,9 @@ public:
         context.reset();
     }
 
-    std::future<http::Response> startRequest(const http::Method method,
-                                             const std::string& uri,
-                                             std::string body)
+    void startRequest(const Method method, const std::string& uri,
+                      std::string body, std::function<void(Response)> callback,
+                      std::function<void(std::string)> errorCallback)
     {
 #if LWS_LIBRARY_VERSION_NUMBER < 2001000
         if (!body.empty())
@@ -73,14 +73,15 @@ public:
 #endif
         if (auto lws = context->startHttpRequest(method, uri))
         {
-            requests.emplace(lws, http::RequestHandler{http::Channel{lws},
-                                                       std::move(body)});
-            return requests.at(lws).getFuture();
+            requests.emplace(lws, RequestHandler{Channel{lws}, std::move(body),
+                                                 std::move(callback),
+                                                 std::move(errorCallback)});
         }
-        return http::make_error_future<std::runtime_error>(connectionFailure);
+        else if (errorCallback)
+            errorCallback(connectionFailure);
     }
 
-    http::RequestHandler* getRequest(lws* wsi)
+    RequestHandler* getRequest(lws* wsi)
     {
         auto it = requests.find(wsi);
         return (it != requests.end()) ? &it->second : nullptr;
@@ -100,7 +101,7 @@ public:
             auto message = std::string("connection failed");
             if (!reason.empty())
                 message.append(": ").append(reason);
-            request->abort(std::runtime_error{message});
+            request->abort(std::move(message));
         }
         requests.erase(wsi);
     }
@@ -108,13 +109,13 @@ public:
     void abortPendingRequests()
     {
         for (auto& it : requests)
-            it.second.abort(std::runtime_error{"client shutdown"});
+            it.second.abort({"client shutdown"});
         requests.clear();
     }
 
     std::unique_ptr<ClientContext> context;
     PollDescriptors pollDescriptors;
-    std::map<lws*, http::RequestHandler> requests;
+    std::map<lws*, RequestHandler> requests;
 };
 
 Client::Client()
@@ -126,11 +127,27 @@ Client::~Client()
 {
 }
 
-std::future<http::Response> Client::request(const std::string& uri,
-                                            const http::Method method,
-                                            std::string body)
+std::future<Response> Client::request(const std::string& uri,
+                                      const Method method, std::string body)
 {
-    return _impl->startRequest(method, uri, std::move(body));
+    auto promise = std::make_shared<std::promise<Response>>();
+    auto callback = [promise](Response response) {
+        promise->set_value(std::move(response));
+    };
+    auto errorCallback = [promise](std::string e) {
+        promise->set_exception(std::make_exception_ptr(std::runtime_error(e)));
+    };
+    _impl->startRequest(method, uri, std::move(body), std::move(callback),
+                        std::move(errorCallback));
+    return promise->get_future();
+}
+
+void Client::request(const std::string& uri, const Method method,
+                     std::string body, std::function<void(Response)> callback,
+                     std::function<void(std::string)> errorCallback)
+{
+    _impl->startRequest(method, uri, std::move(body), std::move(callback),
+                        std::move(errorCallback));
 }
 
 void Client::_setSocketListener(SocketListener* listener)

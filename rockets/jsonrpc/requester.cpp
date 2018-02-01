@@ -90,11 +90,19 @@ std::future<Response> Requester::request(const std::string& method,
 void Requester::request(const std::string& method, const std::string& params,
                         AsyncResponse callback)
 {
-    auto requestJSON = params.empty()
-                           ? makeRequest(method, lastId)
+    try
+    {
+        const auto requestJSON =
+            params.empty() ? makeRequest(method, lastId)
                            : makeRequest(method, lastId, json::parse(params));
-    pendingRequests.emplace(lastId++, callback);
-    _sendRequest(requestJSON.dump(4));
+
+        pendingRequests.emplace(lastId++, callback);
+        _send(requestJSON.dump(4));
+    }
+    catch (const json::parse_error&)
+    {
+        callback(Response::invalidParams());
+    }
 }
 
 bool Requester::processResponse(const std::string& json)

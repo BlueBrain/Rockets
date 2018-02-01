@@ -30,6 +30,7 @@ namespace http
 {
 struct Request;
 struct Response;
+class Client;
 
 /** HTTP method used in a Request. */
 enum class Method

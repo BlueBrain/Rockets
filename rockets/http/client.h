@@ -60,6 +60,22 @@ public:
         const std::string& uri, http::Method method = http::Method::GET,
         std::string body = std::string());
 
+    /**
+     * Make an http request.
+     *
+     * @param uri to address the request.
+     * @param method http method to use.
+     * @param body optional payload to send.
+     * @param callback for the http response.
+     * @param errorCallback used to report request failure (optional).
+     * @throw std::invalid_argument if the uri is too long (>4000 char) or
+     *        some parameter is invalid or not supported.
+     */
+    ROCKETS_API void request(
+        const std::string& uri, http::Method method, std::string body,
+        std::function<void(http::Response)> callback,
+        std::function<void(std::string)> errorCallback = {});
+
     class Impl; // must be public for static_cast from C callback
 private:
     std::unique_ptr<Impl> _impl;

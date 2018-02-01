@@ -151,7 +151,7 @@ BOOST_FIXTURE_TEST_CASE(client_notification_received_by_server, Fixture)
     server.connect("test", [&](const jsonrpc::Request& request) {
         received = (request.message == simpleMessage);
     });
-    client.emit("test", simpleMessage);
+    client.notify("test", simpleMessage);
     BOOST_CHECK(received);
 }
 
@@ -212,7 +212,7 @@ BOOST_FIXTURE_TEST_CASE(client_notification_generates_no_response, Fixture)
         serverReceivedRequest = (request.message == simpleMessage);
         return jsonrpc::Response{"42"};
     });
-    client.emit("test", simpleMessage);
+    client.notify("test", simpleMessage);
     BOOST_CHECK(serverReceivedRequest);
     BOOST_CHECK(!clientCommunicator.receivedMessage);
 }
@@ -223,6 +223,6 @@ BOOST_FIXTURE_TEST_CASE(server_notification_received_by_client, Fixture)
     client.connect("test", [&](const jsonrpc::Request&& request) {
         received = (request.message == simpleMessage);
     });
-    server.emit("test", simpleMessage);
+    server.notify("test", simpleMessage);
     BOOST_CHECK(received);
 }

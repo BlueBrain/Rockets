@@ -1,5 +1,5 @@
-/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
- *                          Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2018, EPFL/Blue Brain Project
+ *                     Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -17,22 +17,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_TYPES_H
-#define ROCKETS_TYPES_H
+#include "helpers.h"
 
-#include <functional>
-#include <future>
+#include "../json.hpp"
+
+using namespace nlohmann;
 
 namespace rockets
 {
-class Server;
-class SocketListener;
-
-#ifdef WIN32
-typedef SOCKET SocketDescriptor;
-#else
-typedef int SocketDescriptor;
-#endif
+namespace jsonrpc
+{
+std::string makeNotification(const std::string& method)
+{
+    return json{{"jsonrpc", "2.0"}, {"method", method}}.dump(4);
 }
 
-#endif
+std::string makeNotification(const std::string& method,
+                             const std::string& params)
+{
+    return json{{"jsonrpc", "2.0"},
+                {"method", method},
+                {"params", json::parse(params)}}
+        .dump(4);
+}
+}
+}

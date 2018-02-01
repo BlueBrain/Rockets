@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_JSONRPC_EMITTER_H
-#define ROCKETS_JSONRPC_EMITTER_H
+#ifndef ROCKETS_JSONRPC_NOTIFIER_H
+#define ROCKETS_JSONRPC_NOTIFIER_H
 
 #include <string>
 
@@ -27,12 +27,12 @@ namespace rockets
 namespace jsonrpc
 {
 /**
- * Emitter of JSON-RPC notifications (request without an id and no response).
+ * Emitter of JSON-RPC notifications (requests without an id and no response).
  */
-class Emitter
+class Notifier
 {
 public:
-    virtual ~Emitter() = default;
+    virtual ~Notifier() = default;
 
     /**
      * Emit a notification.
@@ -40,7 +40,7 @@ public:
      * @param method to call.
      * @param params for the notification.
      */
-    void emit(const std::string& method, const std::string& params);
+    void notify(const std::string& method, const std::string& params);
 
     /**
      * Emit a notification using a JSON-serializable object.
@@ -49,31 +49,13 @@ public:
      * @param params object to send.
      */
     template <typename Params>
-    void emit(const std::string& method, const Params& params)
+    void notify(const std::string& method, const Params& params)
     {
-        emit(method, to_json(params));
+        notify(method, to_json(params));
     }
 
-    /** @return a JSON RPC notification for the given method. */
-    std::string makeNotification(const std::string& method) const;
-
-    /** @return a JSON RPC notification for the given method and params. */
-    std::string makeNotification(const std::string& method,
-                                 const std::string& params) const;
-
-    /**
-     * @return a JSON RPC notification for the given method and templated
-     *         params.
-     */
-    template <typename Params>
-    std::string makeNotification(const std::string& method,
-                                 const Params& params) const
-    {
-        return makeNotification(method, to_json(params));
-    }
-
-private:
-    virtual void _sendNotification(std::string json) = 0;
+protected:
+    virtual void _send(std::string json) = 0;
 };
 }
 }
