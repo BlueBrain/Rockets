@@ -52,6 +52,7 @@ set(ROCKETS_PUBLIC_HEADERS
 )
 set(ROCKETS_HEADERS
   clientContext.h
+  debug.h
   json.hpp
   pollDescriptors.h
   proxyConnectionError.h
