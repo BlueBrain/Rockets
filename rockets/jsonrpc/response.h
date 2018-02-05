@@ -1,5 +1,5 @@
-/* Copyright (c) 2018, EPFL/Blue Brain Project
- *                     Daniel.Nachbaur@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Daniel.Nachbaur@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -17,32 +17,44 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_RESPONSEERROR_H
-#define ROCKETS_RESPONSEERROR_H
+#ifndef ROCKETS_JSONRPC_RESPONSE_H
+#define ROCKETS_JSONRPC_RESPONSE_H
 
-#include <rockets/jsonrpc/response.h>
-#include <stdexcept>
+#include <string>
 
 namespace rockets
 {
 namespace jsonrpc
 {
-class response_error : public std::runtime_error
+/**
+ * Response to a well-formed RPC request.
+ */
+struct Response
 {
-public:
-    response_error(const std::string& what, const int code_)
-        : std::runtime_error(what)
-        , code(code_)
+    std::string result; // JSON encoded
+
+    struct Error
+    {
+        std::string message;
+        int code;
+    } error{"", 0};
+
+    Response() = default;
+    Response(std::string&& res)
+        : result(res)
+    {
+    }
+    Response(Error&& err)
+        : result()
+        , error{err}
     {
     }
 
-    explicit response_error(const Response::Error& error)
-        : std::runtime_error(error.message)
-        , code(error.code)
+    bool isError() const { return error.code != 0; }
+    static Response invalidParams()
     {
+        return {Error{"Invalid params", -32602}};
     }
-
-    const int code;
 };
 }
 }

@@ -42,6 +42,21 @@
 #include <boost/test/unit_test.hpp>
 
 #include "json_utils.h"
+
+template <typename T>
+std::string to_json(const T& obj)
+{
+    nlohmann::json json;
+    json["value"] = obj;
+    return json.dump(4);
+}
+template <typename T>
+bool from_json(T& obj, const std::string& json)
+{
+    obj = nlohmann::json::parse(json)["value"];
+    return true;
+}
+
 #include "rockets/http/utils.h"
 
 #include <rockets/jsonrpc/client.h>
@@ -150,7 +165,7 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server, Fixture)
         return jsonrpc::Response{"\"42\""};
     });
     client.request("test", simpleMessage, [&](jsonrpc::Response response) {
-        clientReceivedReply = !response.error;
+        clientReceivedReply = !response.isError();
         receivedValue = response.result;
     });
     BOOST_CHECK(serverReceivedRequest);
@@ -171,8 +186,23 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
     BOOST_REQUIRE(http::is_ready(future));
 
     const jsonrpc::Response response = future.get();
-    BOOST_CHECK(!response.error);
+    BOOST_CHECK(!response.isError());
     BOOST_CHECK_EQUAL(response.result, "\"42\"");
+}
+
+BOOST_FIXTURE_TEST_CASE(client_templated_request_answered_by_server, Fixture)
+{
+    bool serverReceivedRequest = false;
+    std::string receivedValue;
+    const std::string message{"give me 42"};
+    server.bind<std::string, int>("test", [&](const std::string& request) {
+        serverReceivedRequest = (request == message);
+        return 42;
+    });
+    auto future = client.request<std::string, int>("test", message);
+    BOOST_CHECK(serverReceivedRequest);
+    BOOST_REQUIRE(http::is_ready(future));
+    BOOST_CHECK_EQUAL(future.get(), 42);
 }
 
 BOOST_FIXTURE_TEST_CASE(client_notification_generates_no_response, Fixture)

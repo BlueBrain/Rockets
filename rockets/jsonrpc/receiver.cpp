@@ -52,10 +52,11 @@ json makeErrorResponse(const json& error, const json& id = json())
     return json{{"jsonrpc", "2.0"}, {"error", error}, {"id", id}};
 }
 
-json makeErrorResponse(const int code, const std::string& message,
-                       const json& id)
+json makeErrorResponse(const Response::Error& error, const json& id)
 {
-    return makeErrorResponse(json{{"code", code}, {"message", message}}, id);
+    return makeErrorResponse(json{{"code", error.code},
+                                  {"message", error.message}},
+                             id);
 }
 
 bool _isValidJsonRpcRequest(const json& object)
@@ -158,8 +159,8 @@ public:
                      return;
                  }
 
-                 if (rep.error != 0)
-                     callback(makeErrorResponse(rep.error, rep.result, id));
+                 if (rep.isError())
+                     callback(makeErrorResponse(rep.error, id));
                  else
                      callback(makeResponse(rep.result, id));
              });

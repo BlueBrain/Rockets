@@ -23,6 +23,7 @@
 #include <functional>
 #include <string>
 
+#include <rockets/jsonrpc/response.h>
 #include <rockets/ws/types.h>
 
 namespace rockets
@@ -30,28 +31,6 @@ namespace rockets
 namespace jsonrpc
 {
 using ws::Request;
-
-/**
- * Response to a well-formed RPC request.
- */
-struct Response
-{
-    std::string result;
-    int error = 0;
-
-    Response() = default;
-    Response(std::string&& res)
-        : result(res)
-    {
-    }
-    Response(std::string&& res, const int err)
-        : result(res)
-        , error{err}
-    {
-    }
-
-    static Response invalidParams() { return {"Invalid params", -32602}; }
-};
 
 /** @name Asynchronous response to a request. */
 //@{

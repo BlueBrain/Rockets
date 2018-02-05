@@ -20,6 +20,7 @@
 #ifndef ROCKETS_JSONRPC_REQUESTER_H
 #define ROCKETS_JSONRPC_REQUESTER_H
 
+#include <rockets/jsonrpc/responseError.h>
 #include <rockets/jsonrpc/types.h>
 
 #include <future>
@@ -56,6 +57,41 @@ public:
      */
     void request(const std::string& method, const std::string& params,
                  AsyncResponse callback);
+
+    /**
+     * Make a request with templated parameters and result.
+     *
+     * @param method to call.
+     * @param params for the request, must be serializable to JSON with
+     *               `std::string to_json(const Params&)`
+     * @return result of the request, must be serializable from JSON with
+     *         `bool from_json(RetVal& obj, const std::string& json)`
+     * @throw response_error if request returns error or from_json on RetVal
+     * failed
+     */
+    template <typename Params, typename RetVal>
+    std::future<RetVal> request(const std::string& method, const Params& params)
+    {
+        auto promise = std::make_shared<std::promise<RetVal>>();
+        auto callback = [promise](Response response) {
+            if (response.isError())
+                promise->set_exception(std::make_exception_ptr(
+                    response_error(response.error.message,
+                                   response.error.code)));
+            else
+            {
+                RetVal value;
+                if (!from_json(value, response.result))
+                    promise->set_exception(std::make_exception_ptr(
+                        response_error("Response JSON conversion failed",
+                                       -33001)));
+                else
+                    promise->set_value(value);
+            }
+        };
+        request(method, to_json(params), callback);
+        return promise->get_future();
+    }
 
 protected:
     /**

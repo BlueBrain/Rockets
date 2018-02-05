@@ -69,8 +69,8 @@ Response makeResponse(const json& object)
     if (object.count("error"))
     {
         const auto& error = object["error"];
-        return Response{error["message"].get<std::string>(),
-                        error["code"].get<int>()};
+        return Response{Response::Error{error["message"].get<std::string>(),
+                                        error["code"].get<int>()}};
     }
     return Response{object["result"].dump()};
 }
@@ -90,11 +90,11 @@ std::future<Response> Requester::request(const std::string& method,
 void Requester::request(const std::string& method, const std::string& params,
                         AsyncResponse callback)
 {
-    auto request = params.empty()
-                       ? makeRequest(method, lastId)
-                       : makeRequest(method, lastId, json::parse(params));
+    auto requestJSON = params.empty()
+                           ? makeRequest(method, lastId)
+                           : makeRequest(method, lastId, json::parse(params));
     pendingRequests.emplace(lastId++, callback);
-    _sendRequest(request.dump(4));
+    _sendRequest(requestJSON.dump(4));
 }
 
 bool Requester::processResponse(const std::string& json)
