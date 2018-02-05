@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -21,6 +21,7 @@
 
 #include "../clientContext.h"
 #include "../pollDescriptors.h"
+#include "../proxyConnectionError.h"
 #include "../utils.h"
 #include "channel.h"
 #include "requestHandler.h"
@@ -157,12 +158,28 @@ void Client::_setSocketListener(SocketListener* listener)
 
 void Client::_processSocket(const SocketDescriptor fd, const int events)
 {
-    _impl->context->service(_impl->pollDescriptors, fd, events);
+    try
+    {
+        _impl->context->service(_impl->pollDescriptors, fd, events);
+    }
+    catch (const proxy_connection_error&)
+    {
+        // nothing to do: lws emits LWS_CALLBACK_CLOSED_CLIENT_HTTP before
+        // coming here, so the request is already aborted.
+    }
 }
 
 void Client::_process(const int timeout_ms)
 {
-    _impl->context->service(timeout_ms);
+    try
+    {
+        _impl->context->service(timeout_ms);
+    }
+    catch (const proxy_connection_error&)
+    {
+        // nothing to do: lws emits LWS_CALLBACK_CLOSED_CLIENT_HTTP before
+        // coming here, so the request is already aborted.
+    }
 }
 
 static int callback_http(lws* wsi, lws_callback_reasons reason, void* /*user*/,

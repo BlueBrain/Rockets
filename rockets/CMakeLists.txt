@@ -86,6 +86,7 @@ set(ROCKETS_SOURCES
   http/requestHandler.cpp
   http/utils.cpp
   jsonrpc/helpers.cpp
+  jsonrpc/http.cpp
   jsonrpc/notifier.cpp
   jsonrpc/receiver.cpp
   jsonrpc/requester.cpp
