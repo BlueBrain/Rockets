@@ -85,14 +85,7 @@ private:
 
     friend class rockets::jsonrpc::Client<HttpCommunicator>;
 
-    void sendText(std::string message)
-    {
-        client.request(url, http::Method::POST, std::move(message),
-                       [this](http::Response response) {
-                           if (callback)
-                               callback(ws::Request{std::move(response.body)});
-                       });
-    }
+    void sendText(std::string message);
     void handleText(ws::MessageCallback callback_) { callback = callback_; }
 };
 }
