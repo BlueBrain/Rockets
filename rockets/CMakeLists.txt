@@ -39,6 +39,7 @@ set(ROCKETS_PUBLIC_HEADERS
   jsonrpc/emitter.h
   jsonrpc/receiver.h
   jsonrpc/requester.h
+  jsonrpc/response.h
   jsonrpc/responseError.h
   jsonrpc/server.h
   jsonrpc/types.h

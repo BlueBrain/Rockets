@@ -155,7 +155,7 @@ public:
             }
             catch (const response_error& e)
             {
-                return Response{e.what(), e.code};
+                return Response{Response::Error{e.what(), e.code}};
             }
         });
     }
