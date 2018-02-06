@@ -29,6 +29,10 @@ namespace jsonrpc
 {
 namespace
 {
+const Response destructionError{
+    Response::Error{"Requester was destroyed before receiving a response",
+                    -36500}};
+
 json makeRequest(const std::string& method, const size_t id)
 {
     return json{{"jsonrpc", "2.0"}, {"method", method}, {"id", id}};
@@ -76,6 +80,24 @@ Response makeResponse(const json& object)
 }
 }
 
+class Requester::Impl
+{
+public:
+    std::map<size_t, AsyncResponse> pendingRequests;
+    size_t lastId = 0u;
+};
+
+Requester::Requester()
+    : _impl{new Impl}
+{
+}
+
+Requester::~Requester()
+{
+    for (auto&& it : _impl->pendingRequests)
+        it.second(destructionError);
+}
+
 std::future<Response> Requester::request(const std::string& method,
                                          const std::string& params)
 {
@@ -93,10 +115,11 @@ void Requester::request(const std::string& method, const std::string& params,
     try
     {
         const auto requestJSON =
-            params.empty() ? makeRequest(method, lastId)
-                           : makeRequest(method, lastId, json::parse(params));
+            params.empty()
+                ? makeRequest(method, _impl->lastId)
+                : makeRequest(method, _impl->lastId, json::parse(params));
 
-        pendingRequests.emplace(lastId++, callback);
+        _impl->pendingRequests.emplace(_impl->lastId++, callback);
         _send(requestJSON.dump(4));
     }
     catch (const json::parse_error&)
@@ -115,12 +138,12 @@ bool Requester::processResponse(const std::string& json)
     if (!id.is_number_unsigned())
         return false;
 
-    auto it = pendingRequests.find(id.get<size_t>());
-    if (it == pendingRequests.end())
+    auto it = _impl->pendingRequests.find(id.get<size_t>());
+    if (it == _impl->pendingRequests.end())
         return false;
 
     it->second(makeResponse(response));
-    pendingRequests.erase(it);
+    _impl->pendingRequests.erase(it);
     return true;
 }
 }

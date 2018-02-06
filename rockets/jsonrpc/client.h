@@ -48,11 +48,18 @@ public:
     Client(Communicator& comm)
         : communicator{comm}
     {
-        communicator.handleText([this](const jsonrpc::Request& request_) {
-            if (!processResponse(request_.message))
-                _processNotification(request_);
-            return std::string();
-        });
+        communicator.handleText(
+            [ this, thisStatus =
+                        std::weak_ptr<bool>{status} ](const Request& request_) {
+                // Prevent access to *this* by a callback after the Client has
+                // been destroyed (in non-multithreaded contexts).
+                if (!thisStatus.expired())
+                {
+                    if (!processResponse(request_.message))
+                        _processNotification(request_);
+                }
+                return std::string();
+            });
     }
 
 private:
@@ -62,17 +69,13 @@ private:
         communicator.sendText(std::move(json));
     }
 
-    void _processNotification(const jsonrpc::Request& request_)
+    void _processNotification(const Request& request_)
     {
-        process(request_, [this](std::string response) {
-            // Note: response should normally be empty, as we don't expect to
-            // receive requests from the server (only notifications).
-            if (!response.empty())
-                communicator.sendText(std::move(response));
-        });
+        process(request_, [](std::string) { /* Client should never reply. */ });
     }
 
     Communicator& communicator;
+    std::shared_ptr<bool> status = std::make_shared<bool>(true);
 };
 }
 }

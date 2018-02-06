@@ -89,12 +89,12 @@ BOOST_FIXTURE_TEST_CASE(json_rpc_over_http, Fixture)
     auto response4 = client.request("substract", "[15]");
 
     using http::is_ready;
-    auto maxTry = 100;
+    auto maxTry = 1000;
     while (--maxTry && (!is_ready(response1) || !is_ready(response2) ||
                         !is_ready(response3) || !is_ready(response4)))
     {
-        httpClient.process(0);
-        httpServer.process(0);
+        httpClient.process(10);
+        httpServer.process(10);
     }
 
     BOOST_REQUIRE(is_ready(response1));
@@ -102,14 +102,28 @@ BOOST_FIXTURE_TEST_CASE(json_rpc_over_http, Fixture)
 
     BOOST_REQUIRE(is_ready(response2));
     const auto error2 = response2.get();
-    BOOST_CHECK_EQUAL(error2.result, "Invalid params");
-    BOOST_CHECK_EQUAL(error2.error, -32602);
+    BOOST_CHECK_EQUAL(error2.error.message, "Invalid params");
+    BOOST_CHECK_EQUAL(error2.error.code, -32602);
 
     BOOST_REQUIRE(is_ready(response3));
     BOOST_CHECK_EQUAL(response3.get().result, "-17");
 
     BOOST_REQUIRE(is_ready(response4));
     const auto error4 = response4.get();
-    BOOST_CHECK_EQUAL(error4.result, "Invalid params");
-    BOOST_CHECK_EQUAL(error4.error, -32602);
+    BOOST_CHECK_EQUAL(error4.error.message, "Invalid params");
+    BOOST_CHECK_EQUAL(error4.error.code, -32602);
+}
+
+BOOST_AUTO_TEST_CASE(abort_pending_request)
+{
+    auto clientStack = std::make_unique<Fixture>();
+    auto response = clientStack->client.request("substract", "[42, 23]");
+    clientStack.reset();
+
+    using http::is_ready;
+    BOOST_REQUIRE(is_ready(response));
+    const auto error = response.get();
+    BOOST_CHECK_EQUAL(error.error.message,
+                      "Requester was destroyed before receiving a response");
+    BOOST_CHECK_EQUAL(error.error.code, -36500);
 }

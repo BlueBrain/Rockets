@@ -20,8 +20,8 @@
 #ifndef ROCKETS_JSONRPC_REQUESTER_H
 #define ROCKETS_JSONRPC_REQUESTER_H
 
-#include <rockets/jsonrpc/responseError.h>
 #include <rockets/jsonrpc/notifier.h>
+#include <rockets/jsonrpc/responseError.h>
 #include <rockets/jsonrpc/types.h>
 
 #include <future>
@@ -37,7 +37,8 @@ namespace jsonrpc
 class Requester : public Notifier
 {
 public:
-    virtual ~Requester() = default;
+    Requester();
+    ~Requester();
 
     /**
      * Make a request.
@@ -105,8 +106,8 @@ protected:
     bool processResponse(const std::string& json);
 
 private:
-    std::map<size_t, AsyncResponse> pendingRequests;
-    size_t lastId = 0u;
+    class Impl;
+    std::unique_ptr<Impl> _impl;
 };
 }
 }
