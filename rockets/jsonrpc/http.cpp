@@ -41,14 +41,19 @@ namespace jsonrpc
 void HttpCommunicator::sendText(std::string message)
 {
     const auto id = json::parse(message)["id"];
+
+    // Copying the callback in the lambda instead of *this* prevents potential
+    // invalid memory access if the Communicator is destroyed before the
+    // http::Client (which aborts pending requests, calling the error callback).
+    const auto& cb = callback;
     client.request(url, http::Method::POST, std::move(message),
-                   [this](http::Response response) {
-                       if (callback)
-                           callback(ws::Request{std::move(response.body)});
+                   [cb](http::Response response) {
+                       if (cb)
+                           cb(ws::Request{std::move(response.body)});
                    },
-                   [this, id](std::string errorMsg) {
-                       if (callback)
-                           callback(ws::Request{makeJsonError(errorMsg, id)});
+                   [cb, id](std::string errorMsg) {
+                       if (cb)
+                           cb(ws::Request{makeJsonError(errorMsg, id)});
                    });
 }
 }

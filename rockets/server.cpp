@@ -58,9 +58,9 @@ public:
          const unsigned int threadCount)
         : handler{registry}
     {
-        context =
-            std::make_unique<ServerContext>(uri, name, threadCount, callback_http,
-                                       callback_websockets, this);
+        context = std::make_unique<ServerContext>(uri, name, threadCount,
+                                                  callback_http,
+                                                  callback_websockets, this);
         if (threadCount > 0)
             serviceThreadPool = std::make_unique<ServiceThreadPool>(*context);
     }
@@ -83,8 +83,8 @@ public:
     void openWsConnection(lws* wsi)
     {
         std::lock_guard<std::mutex> lock{wsConnectionsMutex};
-        wsConnections.emplace(wsi,
-                              ws::Connection{std::make_unique<ws::Channel>(wsi)});
+        wsConnections.emplace(wsi, ws::Connection{
+                                       std::make_unique<ws::Channel>(wsi)});
     }
 
     void closeWsConnection(lws* wsi)
