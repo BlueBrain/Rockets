@@ -87,7 +87,7 @@ std::unique_ptr<ws::Connection> ClientContext::connect(
     connectInfo.protocol = wsProtocolName.c_str();
 
     if (auto wsi = lws_client_connect_via_info(&connectInfo))
-        return make_unique<ws::Connection>(make_unique<ws::Channel>(wsi));
+        return std::make_unique<ws::Connection>(std::make_unique<ws::Channel>(wsi));
 
     throw std::runtime_error(wsConnectionFailure);
 }

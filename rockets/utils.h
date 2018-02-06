@@ -36,12 +36,6 @@ struct Uri
 };
 Uri parse(std::string uri);
 
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
 lws_protocols make_protocol(const char* name, lws_callback_function* callback,
                             void* user);
 lws_protocols null_protocol();

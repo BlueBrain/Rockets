@@ -56,7 +56,7 @@ static int callback_http(lws* wsi, lws_callback_reasons reason, void* user,
 class Client::Impl
 {
 public:
-    Impl() { context = make_unique<ClientContext>(callback_http, this); }
+    Impl() { context = std::make_unique<ClientContext>(callback_http, this); }
     ~Impl()
     {
         abortPendingRequests();
