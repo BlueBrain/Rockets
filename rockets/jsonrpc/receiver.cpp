@@ -20,6 +20,7 @@
 #include "receiver.h"
 
 #include "../json.hpp"
+#include "errorCodes.h"
 
 #include <map>
 
@@ -36,9 +37,11 @@ const char* reservedMethodError =
     "Method names starting with 'rpc.' are "
     "reserved by the standard / forbidden.";
 
-const json parseError{{"code", -32700}, {"message", "Parse error"}};
-const json invalidRequest{{"code", -32600}, {"message", "Invalid Request"}};
-const json methodNotFound{{"code", -32601}, {"message", "Method not found"}};
+const Response::Error parseError{"Parse error", ErrorCode::parse_error};
+const Response::Error invalidRequest{"Invalid Request",
+                                     ErrorCode::invalid_request};
+const Response::Error methodNotFound{"Method not found",
+                                     ErrorCode::method_not_found};
 
 json makeResponse(const std::string& result, const json& id)
 {
@@ -47,12 +50,12 @@ json makeResponse(const std::string& result, const json& id)
                 {"id", id}};
 }
 
-json makeErrorResponse(const json& error, const json& id = json())
+json makeErrorResponse(const json& error, const json& id)
 {
     return json{{"jsonrpc", "2.0"}, {"error", error}, {"id", id}};
 }
 
-json makeErrorResponse(const Response::Error& error, const json& id)
+json makeErrorResponse(const Response::Error& error, const json& id = json())
 {
     return makeErrorResponse(json{{"code", error.code},
                                   {"message", error.message}},

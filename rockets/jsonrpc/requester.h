@@ -77,18 +77,15 @@ public:
         auto promise = std::make_shared<std::promise<RetVal>>();
         auto callback = [promise](Response response) {
             if (response.isError())
-                promise->set_exception(std::make_exception_ptr(
-                    response_error(response.error.message,
-                                   response.error.code)));
+                promise->set_exception(
+                    std::make_exception_ptr(response_error(response.error)));
             else
             {
                 RetVal value;
                 if (!from_json(value, response.result))
-                    promise->set_exception(std::make_exception_ptr(
-                        response_error("Response JSON conversion failed",
-                                       -33001)));
+                    promise->set_exception(jsonConversionFailed());
                 else
-                    promise->set_value(value);
+                    promise->set_value(std::move(value));
             }
         };
         request(method, to_json(params), callback);
@@ -106,6 +103,8 @@ protected:
     bool processResponse(const std::string& json);
 
 private:
+    static std::exception_ptr jsonConversionFailed();
+
     class Impl;
     std::unique_ptr<Impl> _impl;
 };

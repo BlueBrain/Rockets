@@ -299,7 +299,7 @@ BOOST_FIXTURE_TEST_CASE(process_notification, Fixture)
     // Notifications are rpc requests without an id.
     // They must be processed without returning a response.
     bool called = false;
-    jsonrpc::Response response;
+    jsonrpc::Response response{""};
     jsonrpc::Receiver::ResponseCallback action =
         [&called, &response](const jsonrpc::Request& request) {
             called = true;
@@ -418,7 +418,7 @@ BOOST_FIXTURE_TEST_CASE(process_array_notification, Fixture)
     // Notifications are rpc requests without an id.
     // A batch of notification must be processed without returning a response.
     int called = 0;
-    jsonrpc::Response response;
+    jsonrpc::Response response{""};
     jsonrpc::Receiver::ResponseCallback action =
         [&called, &response](const jsonrpc::Request& request) {
             ++called;
@@ -435,7 +435,7 @@ BOOST_FIXTURE_TEST_CASE(process_array_mixed, Fixture)
 {
     // For mixed notifications/requests batches, only respond to requests.
     int called = 0;
-    jsonrpc::Response response;
+    jsonrpc::Response response{""};
     auto action = [&called, &response](const jsonrpc::Request& request) {
         ++called;
         response = substractArr(request);

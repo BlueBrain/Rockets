@@ -20,24 +20,26 @@
 #include "http.h"
 
 #include "../json.hpp"
+#include "errorCodes.h"
 
 using namespace nlohmann;
-
-namespace
-{
-std::string makeJsonError(const std::string& errorMsg, const json& id)
-{
-    return json{{"jsonrpc", "2.0"},
-                {"error", json{{"message", errorMsg}, {"code", -30100}}},
-                {"id", id}}
-        .dump(4);
-}
-}
 
 namespace rockets
 {
 namespace jsonrpc
 {
+namespace
+{
+std::string makeJsonHttpError(const std::string& errorMsg, const json& id)
+{
+    return json{{"jsonrpc", "2.0"},
+                {"error",
+                 json{{"message", errorMsg}, {"code", ErrorCode::http_error}}},
+                {"id", id}}
+        .dump(4);
+}
+}
+
 void HttpCommunicator::sendText(std::string message)
 {
     const auto id = json::parse(message)["id"];
@@ -53,7 +55,7 @@ void HttpCommunicator::sendText(std::string message)
                    },
                    [cb, id](std::string errorMsg) {
                        if (cb)
-                           cb(ws::Request{makeJsonError(errorMsg, id)});
+                           cb(ws::Request{makeJsonHttpError(errorMsg, id)});
                    });
 }
 }

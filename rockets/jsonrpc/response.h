@@ -22,6 +22,8 @@
 
 #include <string>
 
+#include <rockets/jsonrpc/errorCodes.h>
+
 namespace rockets
 {
 namespace jsonrpc
@@ -35,25 +37,32 @@ struct Response
 
     struct Error
     {
-        std::string message;
-        int code;
-    } error{"", 0};
+        std::string message; // short text description of the error
+        int code = 0;
+    } error;
 
-    Response() = default;
+    /**
+     * Construct a successful response.
+     * @param res The result of the request in JSON format.
+     */
     Response(std::string&& res)
-        : result(res)
+        : result{std::move(res)}
     {
     }
+
+    /**
+     * Construct an error response.
+     * @param err The error that occured during the request.
+     */
     Response(Error&& err)
-        : result()
-        , error{err}
+        : error{std::move(err)}
     {
     }
 
     bool isError() const { return error.code != 0; }
     static Response invalidParams()
     {
-        return {Error{"Invalid params", -32602}};
+        return Response{Error{"Invalid params", ErrorCode::invalid_params}};
     }
 };
 }
