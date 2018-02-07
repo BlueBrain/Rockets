@@ -125,5 +125,5 @@ BOOST_AUTO_TEST_CASE(abort_pending_request)
     const auto error = response.get();
     BOOST_CHECK_EQUAL(error.error.message,
                       "Requester was destroyed before receiving a response");
-    BOOST_CHECK_EQUAL(error.error.code, -36500);
+    BOOST_CHECK_EQUAL(error.error.code, -31002);
 }

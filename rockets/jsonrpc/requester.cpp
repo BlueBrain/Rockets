@@ -20,6 +20,7 @@
 #include "requester.h"
 
 #include "../json.hpp"
+#include "errorCodes.h"
 
 using namespace nlohmann;
 
@@ -31,7 +32,7 @@ namespace
 {
 const Response destructionError{
     Response::Error{"Requester was destroyed before receiving a response",
-                    -36500}};
+                    ErrorCode::request_aborted}};
 
 json makeRequest(const std::string& method, const size_t id)
 {
@@ -76,7 +77,7 @@ Response makeResponse(const json& object)
         return Response{Response::Error{error["message"].get<std::string>(),
                                         error["code"].get<int>()}};
     }
-    return Response{object["result"].dump()};
+    return Response{object["result"].dump(4)};
 }
 }
 
@@ -145,6 +146,13 @@ bool Requester::processResponse(const std::string& json)
     it->second(makeResponse(response));
     _impl->pendingRequests.erase(it);
     return true;
+}
+
+std::exception_ptr Requester::jsonConversionFailed()
+{
+    return std::make_exception_ptr(
+        response_error("Response JSON conversion failed",
+                       ErrorCode::invalid_json_response));
 }
 }
 }

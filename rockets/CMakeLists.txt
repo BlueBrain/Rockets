@@ -36,6 +36,7 @@ set(ROCKETS_PUBLIC_HEADERS
   http/response.h
   http/types.h
   jsonrpc/client.h
+  jsonrpc/errorCodes.h
   jsonrpc/helpers.h
   jsonrpc/http.h
   jsonrpc/notifier.h
