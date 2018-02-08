@@ -614,7 +614,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cors_preflight_options, F, Fixtures, F)
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(get_long_uri_query, F, Fixtures, F)
 {
     F::server.handle(F::foo.getEndpoint(), F::foo);
-    const size_t lwsMaxQuerySize = 4096 - 96 /*Unknown padding.*/;
+    const size_t lwsMaxQuerySize = 4096 - 196 /*Unknown padding.*/;
     const auto path = std::string("/test/foo?");
     const auto size =
         lwsMaxQuerySize - (F::server.getURI().size() + path.size());

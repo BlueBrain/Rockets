@@ -29,7 +29,7 @@ namespace
 {
 const char* contextInitFailure = "failed to initialize lws context";
 const char* wsConnectionFailure = "server unreachable";
-const size_t maxQuerySize = 4096 - 96 /*padding determined empirically*/;
+const size_t maxQuerySize = 4096 - 196 /*padding determined empirically*/;
 const char* uriTooLong = "uri too long (max ~4000 char)";
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
 const char* onlyGetSupported = "Only GET is supported with lws < 2.0";
