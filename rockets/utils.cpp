@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -38,9 +38,13 @@
 
 namespace rockets
 {
-Uri parse(std::string uri)
+Uri parse(const std::string& uri)
 {
-    auto in = const_cast<char*>(uri.c_str()); // uri is modified by parsing
+    // uri is modified by lws_parse_uri(), make a copy.
+    // WAR: pre-C++11 stdlib has copy-on-write semantics for strings, make sure
+    // the string is REALLY copied by using the specific constructor below:
+    auto copy = std::string(uri.data(), uri.length());
+    auto in = const_cast<char*>(copy.c_str());
     const char* protocol = nullptr;
     const char* address = nullptr;
     int port = 0;
