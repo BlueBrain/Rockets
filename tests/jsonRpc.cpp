@@ -140,6 +140,17 @@ const std::string invalidJsonResult{
     "jsonrpc": "2.0"
 })"};
 
+const std::string internalErrorInvalidJson{
+    R"({
+    "error": {
+        "code": -32603,
+        "data": "Server response is not a valid json string",
+        "message": "Internal error"
+    },
+    "id": 3,
+    "jsonrpc": "2.0"
+})"};
+
 const std::string invalidRequestResult{
     R"({
     "error": {
@@ -370,6 +381,15 @@ BOOST_FIXTURE_TEST_CASE(reserved_method_names, Fixture)
 BOOST_FIXTURE_TEST_CASE(non_existant_method, Fixture)
 {
     BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), nonExistantMethodResult);
+}
+
+BOOST_FIXTURE_TEST_CASE(callback_response_is_invalid_json, Fixture)
+{
+    jsonRpc.bind("subtract", [](const jsonrpc::Request&) {
+        return jsonrpc::Response{"Not json!"};
+    });
+    BOOST_CHECK_EQUAL(jsonRpc.process(substractArray),
+                      internalErrorInvalidJson);
 }
 
 BOOST_FIXTURE_TEST_CASE(invalid_json, Fixture)
