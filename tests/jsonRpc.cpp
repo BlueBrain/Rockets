@@ -181,6 +181,16 @@ const std::string invalidParamsResult{
     "jsonrpc": "2.0"
 })"};
 
+const std::string customSubstrationErrorResult{
+    R"({
+    "error": {
+        "code": -1234,
+        "message": "No substractions today"
+    },
+    "id": 3,
+    "jsonrpc": "2.0"
+})"};
+
 const std::string invalidBatch1RequestResult{
     R"([
     {
@@ -274,6 +284,15 @@ bool from_json(Operands& op, const std::string& json)
     return true;
 }
 
+struct RetVal
+{
+    int value = 0;
+};
+std::string to_json(const RetVal& retVal)
+{
+    return std::to_string(retVal.value);
+}
+
 struct Fixture
 {
     jsonrpc::Receiver jsonRpc;
@@ -335,6 +354,26 @@ BOOST_FIXTURE_TEST_CASE(bind_with_params, Fixture)
     });
     BOOST_CHECK_EQUAL(jsonRpc.process(substractObject), substractResult);
     BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), invalidParamsResult);
+}
+
+BOOST_FIXTURE_TEST_CASE(bind_with_params_and_retval, Fixture)
+{
+    jsonRpc.bind<Operands, RetVal>("subtract", [](const Operands op) {
+        return RetVal{op.left - op.right};
+    });
+    BOOST_CHECK_EQUAL(jsonRpc.process(substractObject), substractResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), invalidParamsResult);
+}
+
+BOOST_FIXTURE_TEST_CASE(bind_with_params_and_retval_error, Fixture)
+{
+    jsonRpc.bind<Operands, RetVal>("subtract", [](const Operands op) {
+        if (op.right != op.left)
+            throw jsonrpc::response_error("No substractions today", -1234);
+        return RetVal();
+    });
+    BOOST_CHECK_EQUAL(jsonRpc.process(substractObject),
+                      customSubstrationErrorResult);
 }
 
 BOOST_FIXTURE_TEST_CASE(bind_async_with_params, Fixture)
