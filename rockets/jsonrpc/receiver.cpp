@@ -36,19 +36,16 @@ const std::string reservedMethodPrefix = "rpc.";
 const char* reservedMethodError =
     "Method names starting with 'rpc.' are "
     "reserved by the standard / forbidden.";
+const std::string jsonResponseParseError =
+    "Server response is not a valid json string";
 
 const Response::Error parseError{"Parse error", ErrorCode::parse_error};
 const Response::Error invalidRequest{"Invalid Request",
                                      ErrorCode::invalid_request};
 const Response::Error methodNotFound{"Method not found",
                                      ErrorCode::method_not_found};
-
-json makeResponse(const std::string& result, const json& id)
-{
-    return json{{"jsonrpc", "2.0"},
-                {"result", json::parse(result)},
-                {"id", id}};
-}
+const Response::Error internalError{"Internal error",
+                                    ErrorCode::internal_error};
 
 json makeErrorResponse(const json& error, const json& id)
 {
@@ -60,6 +57,38 @@ json makeErrorResponse(const Response::Error& error, const json& id = json())
     return makeErrorResponse(json{{"code", error.code},
                                   {"message", error.message}},
                              id);
+}
+
+json makeErrorResponse(const Response::Error& error, const json& id,
+                       const json& data)
+{
+    return makeErrorResponse(json{{"code", error.code},
+                                  {"message", error.message},
+                                  {"data", data}},
+                             id);
+}
+
+json makeResponse(const json& result, const json& id)
+{
+    return json{{"jsonrpc", "2.0"}, {"result", result}, {"id", id}};
+}
+
+json makeResponse(const std::string& resultJson, const json& id)
+{
+    try
+    {
+        return makeResponse(json::parse(resultJson), id);
+    }
+    catch (const json::parse_error&)
+    {
+        return makeErrorResponse(internalError, id, jsonResponseParseError);
+    }
+}
+
+json makeResponse(const Response& rep, const json& id)
+{
+    return rep.isError() ? makeErrorResponse(rep.error, id)
+                         : makeResponse(rep.result, id);
 }
 
 bool _isValidJsonRpcRequest(const json& object)
@@ -157,15 +186,9 @@ public:
                  // No reply for valid "notifications" (requests without an
                  // "id")
                  if (id.is_null())
-                 {
                      callback(json());
-                     return;
-                 }
-
-                 if (rep.isError())
-                     callback(makeErrorResponse(rep.error, id));
                  else
-                     callback(makeResponse(rep.result, id));
+                     callback(makeResponse(rep, id));
              });
     }
     std::map<std::string, Receiver::DelayedResponseCallback> methods;
