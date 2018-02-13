@@ -1,5 +1,5 @@
-# Copyright (c) 2017, EPFL/Blue Brain Project
-#                     Raphael.Dumusc@epfl.ch
+# Copyright (c) 2017-2018, EPFL/Blue Brain Project
+#                          Raphael.Dumusc@epfl.ch
 #
 # This file is part of Rockets <https://github.com/BlueBrain/Rockets>
 #
@@ -20,6 +20,10 @@ if(NOT ${Libwebsockets_VERSION} VERSION_LESS 2.0.0)
   set(ROCKETS-HTTP-REQUEST_SOURCES httpRequest.cpp)
   set(ROCKETS-HTTP-REQUEST_LINK_LIBRARIES Rockets)
   common_application(rockets-http-request)
+
+  set(ROCKETS-JSONRPC-REQUEST_SOURCES jsonrpcRequest.cpp)
+  set(ROCKETS-JSONRPC-REQUEST_LINK_LIBRARIES Rockets)
+  common_application(rockets-jsonrpc-request)
 endif()
 
 set(ROCKETS-SERVER_SOURCES server.cpp)

@@ -37,7 +37,8 @@ namespace jsonrpc
  * @param receiver the JSON-RPC request processor.
  */
 template <typename ReceiverT>
-void connect(Server& server, const std::string& endpoint, ReceiverT& receiver)
+void connect(rockets::Server& server, const std::string& endpoint,
+             ReceiverT& receiver)
 {
     auto processJsonRpc = [&receiver](const http::Request& request) {
         // Package json-rpc response in http::Response when ready

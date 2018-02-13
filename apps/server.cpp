@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -28,7 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <rockets/jsonrpc/http.h>
+#include <rockets/jsonrpc/server.h>
 #include <rockets/server.h>
+
+#include "rockets/json.hpp"
 
 #include <cstdio> // std::snprintf
 #include <iostream>
@@ -63,17 +67,27 @@ const std::string htmlPage{
             var wsProtocol = "%s";
             var websocket = null;
             var debugTextArea = document.getElementById("debugTextArea");
+            var jsonrpc = %s;
+            var requestId = 0;
             function debug(message) {
                 debugTextArea.value += message + "\n";
                 debugTextArea.scrollTop = debugTextArea.scrollHeight;
             }
+            function jsonrpcEchoRequest(params) {
+                var obj = {jsonrpc: '2.0', method: 'echo', id: requestId++};
+                obj['params'] = {message: params}
+                return JSON.stringify(obj);
+            }
             function sendMessage() {
                 var msg = document.getElementById("inputText").value;
+                document.getElementById("inputText").value = "";
                 if (websocket != null)
                 {
-                    document.getElementById("inputText").value = "";
-                    websocket.send(msg);
-                    debug('Sent message: "' + msg + '"');
+                    if (jsonrpc)
+                        websocket.send(jsonrpcEchoRequest(msg));
+                    else
+                        websocket.send(msg);
+                    debug('=> "' + msg + '"');
                 }
             }
             function initWebSocket() {
@@ -90,7 +104,19 @@ const std::string htmlPage{
                         debug("DISCONNECTED");
                     };
                     websocket.onmessage = function (event) {
-                        debug('Received message: "' + event.data + '"');
+                        if (jsonrpc) {
+                            var obj = JSON.parse(event.data);
+                            if (obj.hasOwnProperty('error')) {
+                                var err = obj['error'];
+                                var msg = err['code'] + ' - ' + err['message'];
+                            }
+                            else if (obj.hasOwnProperty('result')) {
+                                var msg = obj['result'];
+                            }
+                        } else {
+                            var msg = event.data;
+                        }
+                        debug('<= "' + msg + '"');
                     };
                     websocket.onerror = function (evt) {
                         debug('ERROR: ' + evt.data);
@@ -142,8 +168,8 @@ void setupCtrlCHandler()
     sigaction(SIGINT, &sigIntHandler, 0);
 }
 
-template<typename ...Args>
-std::string string_format(const std::string& input, Args... args)
+template <typename... Args>
+std::string format(const std::string& input, Args... args)
 {
     const auto size = std::snprintf(nullptr, 0, input.c_str(), args...);
     std::string output(size, '\0');
@@ -151,38 +177,83 @@ std::string string_format(const std::string& input, Args... args)
     return output;
 }
 
+template <typename Container>
+bool contains(const Container& c, const std::string& value)
+{
+    return std::find(c.begin(), c.end(), value) != c.end();
+}
+
+template <typename Container>
+void remove(Container& c, const std::string& value)
+{
+    c.erase(std::remove(c.begin(), c.end(), value), c.end());
+}
+
+void print_usage()
+{
+    std::cout << "Usage: rockets-server [interface:port] [ws-protocol]"
+              << std::endl
+              << "Options: --jsonrpc - use JSON-RPC 2.0 protocol" << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     setupCtrlCHandler();
 
+    std::vector<std::string> args;
     for (int i = 1; i < argc; ++i)
+        args.emplace_back(argv[i]);
+
+    if (contains(args, "--help"))
     {
-        if (std::string(argv[i]) == "--help")
-        {
-            std::cout << "Usage: rockets-server [interface:port] [protocol]"
-                      << std::endl;
-            return EXIT_SUCCESS;
-        }
+        print_usage();
+        return EXIT_SUCCESS;
     }
 
-    const auto interface = (argc >= 2) ? argv[1] : ":8888";
-    const auto wsProtocol = (argc >= 3) ? argv[2] : "rockets";
+    const auto useJsonRpc = contains(args, "--jsonrpc");
+    remove(args, "--jsonrpc");
+    const auto interface = (args.size() >= 1) ? args[0] : ":8888";
+    const auto wsProtocol = (args.size() >= 2) ? args[1] : "rockets";
 
     try
     {
         Server server{interface, wsProtocol};
 
         const auto uri = server.getURI();
-        const auto page = string_format(htmlPage, uri.c_str(), wsProtocol);
+        const auto page = format(htmlPage, uri.c_str(), wsProtocol.c_str(),
+                                 useJsonRpc ? "true" : "false");
 
         server.handle(http::Method::GET, "", [&page](const http::Request&) {
             return http::make_ready_response(http::Code::OK, page, "text/html");
         });
-        server.handleText([](ws::Request request) {
-            return "server echo: " + request.message;
-        });
 
-        std::cout << "Listening on: http://" << uri << std::endl;
+        std::unique_ptr<jsonrpc::Server<rockets::Server>> rpc;
+        if (useJsonRpc)
+        {
+            rpc = std::make_unique<jsonrpc::Server<rockets::Server>>(server);
+            rpc->bind("echo", [](const jsonrpc::Request& req) {
+                using namespace nlohmann;
+                const auto input = json::parse(req.message, nullptr, false);
+                if (input.count("message"))
+                    return jsonrpc::Response{input["message"].dump()};
+                return jsonrpc::Response::invalidParams();
+            });
+            // also accept HTTP POST "/" JSON-RPC commands
+            jsonrpc::connect(server, "", *rpc);
+        }
+        else
+        {
+            server.handleText([](ws::Request request) {
+                return "server echo: " + request.message;
+            });
+        }
+
+        std::cout << "Listening on: http://" << uri
+                  << " with websockets subprotocol '" << wsProtocol << "'";
+        if (useJsonRpc)
+            std::cout << " using JSON-RPC 2.0";
+        std::cout << std::endl;
+
         while (running)
             server.process(100);
     }
