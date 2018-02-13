@@ -1,8 +1,8 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
- *                     Stefan.Eilemann@epfl.ch
- *                     Daniel.Nachbaur@epfl.ch
- *                     Pawel.Podhajski@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
+ *                          Stefan.Eilemann@epfl.ch
+ *                          Daniel.Nachbaur@epfl.ch
+ *                          Pawel.Podhajski@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -24,6 +24,7 @@
 
 #include "json_utils.h"
 
+#include <rockets/helpers.h>
 #include <rockets/http/client.h>
 #include <rockets/http/helpers.h>
 #include <rockets/http/request.h>
@@ -111,12 +112,6 @@ template <typename T>
 bool from_json(T& obj, const std::string& json)
 {
     return obj.fromJson(json);
-}
-
-template <typename T>
-bool is_ready(const std::future<T>& f)
-{
-    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 
 class MockClient : public http::Client

@@ -43,8 +43,8 @@
 
 #include "json_utils.h"
 
+#include <rockets/helpers.h>
 #include <rockets/http/client.h>
-#include <rockets/http/utils.h>
 #include <rockets/jsonrpc/client.h>
 #include <rockets/jsonrpc/http.h>
 #include <rockets/jsonrpc/receiver.h>
@@ -88,7 +88,6 @@ BOOST_FIXTURE_TEST_CASE(json_rpc_over_http, Fixture)
     auto response3 = client.request("substract", "[25, 42]");
     auto response4 = client.request("substract", "[15]");
 
-    using http::is_ready;
     auto maxTry = 1000;
     while (--maxTry && (!is_ready(response1) || !is_ready(response2) ||
                         !is_ready(response3) || !is_ready(response4)))
@@ -120,7 +119,6 @@ BOOST_AUTO_TEST_CASE(abort_pending_request)
     auto response = clientStack->client.request("substract", "[42, 23]");
     clientStack.reset();
 
-    using http::is_ready;
     BOOST_REQUIRE(is_ready(response));
     const auto error = response.get();
     BOOST_CHECK_EQUAL(error.error.message,

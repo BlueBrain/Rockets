@@ -28,18 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <rockets/helpers.h>
 #include <rockets/http/client.h>
 
 #include <iostream>
 #include <string>
 
 using namespace rockets;
-
-template <typename T>
-bool is_ready(const std::future<T>& f)
-{
-    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-}
 
 int main(int argc, char** argv)
 {
