@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_server)
     auto future = client.connect("inexistantServer:453", wsProtocol);
     int attempts = 1000;
     while (!is_ready(future) && --attempts)
-        client.process(0);
+        client.process(10);
 
     BOOST_REQUIRE(is_ready(future));
     BOOST_CHECK_THROW(future.get(), std::runtime_error);
