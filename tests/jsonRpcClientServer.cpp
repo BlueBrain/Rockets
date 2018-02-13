@@ -57,8 +57,7 @@ bool from_json(T& obj, const std::string& json)
     return true;
 }
 
-#include "rockets/http/utils.h"
-
+#include <rockets/helpers.h>
 #include <rockets/jsonrpc/client.h>
 #include <rockets/jsonrpc/server.h>
 #include <rockets/server.h>
@@ -183,7 +182,7 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
     });
     auto future = client.request("test", simpleMessage);
     BOOST_CHECK(serverReceivedRequest);
-    BOOST_REQUIRE(http::is_ready(future));
+    BOOST_REQUIRE(is_ready(future));
 
     const jsonrpc::Response response = future.get();
     BOOST_CHECK(!response.isError());
@@ -201,7 +200,7 @@ BOOST_FIXTURE_TEST_CASE(client_templated_request_answered_by_server, Fixture)
     });
     auto future = client.request<std::string, int>("test", message);
     BOOST_CHECK(serverReceivedRequest);
-    BOOST_REQUIRE(http::is_ready(future));
+    BOOST_REQUIRE(is_ready(future));
     BOOST_CHECK_EQUAL(future.get(), 42);
 }
 

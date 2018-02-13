@@ -25,6 +25,7 @@ if(CPPCHECK_VERSION VERSION_LESS 1.78)
 endif()
 
 set(ROCKETS_PUBLIC_HEADERS
+  helpers.h
   server.h
   socketBasedInterface.h
   socketListener.h

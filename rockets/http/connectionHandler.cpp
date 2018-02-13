@@ -19,10 +19,10 @@
 
 #include "connectionHandler.h"
 
+#include "../helpers.h"
 #include "helpers.h"
 #include "request.h"
 #include "response.h"
-#include "utils.h"
 
 namespace
 {

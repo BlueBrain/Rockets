@@ -1,5 +1,5 @@
-/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
- *                          Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2018, EPFL/Blue Brain Project
+ *                     Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -17,25 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef ROCKETS_HTTP_UTILS_H
-#define ROCKETS_HTTP_UTILS_H
+#ifndef ROCKETS_HELPERS_H
+#define ROCKETS_HELPERS_H
 
-#include "cors.h"
+#include <future>
 
 namespace rockets
 {
-namespace http
+/** @return true if the future is ready, i.e. a get() will not block. */
+template <typename T>
+bool is_ready(const std::future<T>& f)
 {
-std::string to_string(const CorsResponseHeader header);
-const char* to_cstring(const Method method);
-
-template <typename E>
-std::future<Response> make_error_future(const std::string& error)
-{
-    std::promise<Response> promise;
-    promise.set_exception(std::make_exception_ptr(E{error}));
-    return promise.get_future();
-}
+    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 }
 

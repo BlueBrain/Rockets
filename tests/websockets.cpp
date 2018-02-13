@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -19,6 +19,7 @@
 
 #define BOOST_TEST_MODULE rockets_websockets
 
+#include <rockets/helpers.h>
 #include <rockets/server.h>
 #include <rockets/ws/client.h>
 
@@ -35,12 +36,6 @@ using namespace rockets;
 namespace
 {
 const auto wsProtocol = "ws_test_protocol";
-
-template <typename T>
-bool is_ready(const std::future<T>& f)
-{
-    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-}
 
 void connect(ws::Client& client, Server& server)
 {
