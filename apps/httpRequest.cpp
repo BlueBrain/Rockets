@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -36,19 +36,27 @@
 
 using namespace rockets;
 
+void print_usage()
+{
+    std::cout << "Usage: rockets-http-request url [body]" << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     for (int i = 1; i < argc; ++i)
     {
         if (std::string(argv[i]) == "--help")
         {
-            std::cout << "Usage: rockets-http-request url [body]" << std::endl;
+            print_usage();
             return EXIT_SUCCESS;
         }
     }
 
     if (argc < 2)
+    {
+        print_usage();
         return EXIT_FAILURE;
+    }
 
     const auto uri = std::string(argv[1]);
     const auto body = argc == 3 ? std::string(argv[2]) : std::string();
@@ -65,7 +73,7 @@ int main(int argc, char** argv)
         if (response.code != http::Code::OK)
             std::cout << "Code " << (int)response.code << ":" << std::endl;
         if (!response.body.empty())
-            std::cout << response.body;
+            std::cout << response.body << std::endl;
         return EXIT_SUCCESS;
     }
     catch (const std::runtime_error& e)

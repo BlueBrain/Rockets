@@ -1,5 +1,5 @@
-# Copyright (c) 2017, EPFL/Blue Brain Project
-#                     Raphael.Dumusc@epfl.ch
+# Copyright (c) 2017-2018, EPFL/Blue Brain Project
+#                          Raphael.Dumusc@epfl.ch
 #
 # This file is part of Rockets <https://github.com/BlueBrain/Rockets>
 #
@@ -44,7 +44,11 @@ common_find_package_post()
 
 set(ROCKETS_DEPENDENT_LIBRARIES Threads)
 
-add_subdirectory(apps)
+option(ROCKETS_BUILD_APPLICATIONS "Build example applications" ON)
+
+if(ROCKETS_BUILD_APPLICATIONS)
+  add_subdirectory(apps)
+endif()
 add_subdirectory(rockets)
 add_subdirectory(tests)
 
