@@ -24,8 +24,6 @@
 #include <rockets/jsonrpc/receiver.h>
 #include <rockets/ws/types.h>
 
-#include <iostream>
-
 namespace rockets
 {
 namespace jsonrpc
@@ -43,8 +41,8 @@ namespace jsonrpc
  *   Used to register a callback for processing the requests and notifications
  *   coming from the client(s).
  */
-template <typename ServerT>
-class Server : public Notifier, public Receiver
+template <typename ServerT, typename ReceiverT = Receiver>
+class Server : public Notifier, public ReceiverT
 {
 public:
     Server(ServerT& server)
@@ -52,7 +50,7 @@ public:
     {
         communicator.handleText(
             [this](ws::Request request, ws::ResponseCallback callback) {
-                process(std::move(request), callback);
+                ReceiverT::process(std::move(request), callback);
             });
     }
 
