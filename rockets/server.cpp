@@ -70,14 +70,7 @@ public:
         if (serviceThreadPool)
             serviceThreadPool->requestBroadcast();
         else
-            wsBroadcast = true;
-    }
-
-    void handleBroadcastRequest()
-    {
-        if (wsBroadcast)
             context->requestBroadcast();
-        wsBroadcast = false;
     }
 
     void openWsConnection(lws* wsi)
@@ -99,7 +92,6 @@ public:
 
     std::mutex wsConnectionsMutex;
     std::map<lws*, ws::Connection> wsConnections;
-    bool wsBroadcast = false;
     ws::MessageHandler wsHandler;
 
     PollDescriptors pollDescriptors;
@@ -234,7 +226,6 @@ void Server::_process(const int timeout_ms)
 {
     if (_impl->serviceThreadPool)
         throw std::logic_error("No process() when using service threads");
-    _impl->handleBroadcastRequest();
     _impl->context->service(timeout_ms);
 }
 
