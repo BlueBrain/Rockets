@@ -92,6 +92,36 @@ public:
         return promise->get_future();
     }
 
+    /**
+     * Make a request with no parameters, but a typed result.
+     *
+     * @param method to call.
+     * @return result of the request, must be serializable from JSON with
+     *         `bool from_json(RetVal& obj, const std::string& json)`
+     * @throw response_error if request returns error or from_json on RetVal
+     * failed
+     */
+    template <typename RetVal>
+    std::future<RetVal> request(const std::string& method)
+    {
+        auto promise = std::make_shared<std::promise<RetVal>>();
+        auto callback = [promise](Response response) {
+            if (response.isError())
+                promise->set_exception(
+                    std::make_exception_ptr(response_error(response.error)));
+            else
+            {
+                RetVal value;
+                if (!from_json(value, response.result))
+                    promise->set_exception(jsonConversionFailed());
+                else
+                    promise->set_value(std::move(value));
+            }
+        };
+        request(method, "", callback);
+        return promise->get_future();
+    }
+
 protected:
     /**
      * Process a JSON-RPC response, calling the associated callback.

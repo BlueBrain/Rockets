@@ -175,7 +175,6 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server, Fixture)
 BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
 {
     bool serverReceivedRequest = false;
-    std::string receivedValue;
     server.bind("test", [&](const jsonrpc::Request&& request) {
         serverReceivedRequest = (request.message == simpleMessage);
         return jsonrpc::Response{"\"42\""};
@@ -192,7 +191,6 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
 BOOST_FIXTURE_TEST_CASE(client_templated_request_answered_by_server, Fixture)
 {
     bool serverReceivedRequest = false;
-    std::string receivedValue;
     const std::string message{"give me 42"};
     server.bind<std::string, int>("test", [&](const std::string& request) {
         serverReceivedRequest = (request == message);
@@ -200,6 +198,14 @@ BOOST_FIXTURE_TEST_CASE(client_templated_request_answered_by_server, Fixture)
     });
     auto future = client.request<std::string, int>("test", message);
     BOOST_CHECK(serverReceivedRequest);
+    BOOST_REQUIRE(is_ready(future));
+    BOOST_CHECK_EQUAL(future.get(), 42);
+}
+
+BOOST_FIXTURE_TEST_CASE(client_templated_request_with_no_parameter, Fixture)
+{
+    server.bind<int>("test", [&] { return 42; });
+    auto future = client.request<int>("test");
     BOOST_REQUIRE(is_ready(future));
     BOOST_CHECK_EQUAL(future.get(), 42);
 }

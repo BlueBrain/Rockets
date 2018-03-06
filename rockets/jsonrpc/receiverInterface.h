@@ -164,6 +164,32 @@ public:
     }
 
     /**
+     * Bind a method to a callback with no parameters but a response.
+     *
+     * The return type must be serializable by a free function:
+     * std::string to_json(const RetVal&)
+     *
+     * @param method to register.
+     * @param action to perform.
+     * @throw std::invalid_argument if the method name starts with "rpc."
+     */
+    template <typename RetVal>
+    void bind(const std::string& method, std::function<RetVal()> action)
+    {
+        bind(method, [action](const Request&) {
+            try
+            {
+                const auto& ret = action();
+                return Response{to_json(ret)};
+            }
+            catch (const response_error& e)
+            {
+                return Response{Response::Error{e.what(), e.code}};
+            }
+        });
+    }
+
+    /**
      * Bind a method to an async response callback.
      *
      * @param method to register.
