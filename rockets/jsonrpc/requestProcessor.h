@@ -52,7 +52,7 @@ public:
     void process(const Request& request, AsyncStringResponse callback);
 
 protected:
-    using json = nlohmann::json;
+    using json = rockets_nlohmann::json;
     using JsonResponseCallback = std::function<void(json)>;
 
 private:

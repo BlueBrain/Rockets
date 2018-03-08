@@ -43,5 +43,5 @@
 template <typename T>
 std::string json_reformat(T&& json)
 {
-    return nlohmann::json::parse(std::forward<T>(json)).dump(4);
+    return rockets_nlohmann::json::parse(std::forward<T>(json)).dump(4);
 }

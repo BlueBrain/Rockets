@@ -21,7 +21,7 @@
 
 #include "../json.hpp"
 
-using namespace nlohmann;
+using namespace rockets_nlohmann;
 
 namespace rockets
 {

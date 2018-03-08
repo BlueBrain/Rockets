@@ -236,7 +236,7 @@ using namespace rockets;
 
 jsonrpc::Response substractObj(const jsonrpc::Request& request)
 {
-    const auto object = nlohmann::json::parse(request.message);
+    const auto object = rockets_nlohmann::json::parse(request.message);
 
     if (!object.count("minuend") || !object["minuend"].is_number() ||
         !object.count("subtrahend") || !object["subtrahend"].is_number())
@@ -249,7 +249,7 @@ jsonrpc::Response substractObj(const jsonrpc::Request& request)
 
 jsonrpc::Response substractArr(const jsonrpc::Request& request)
 {
-    const auto array = nlohmann::json::parse(request.message);
+    const auto array = rockets_nlohmann::json::parse(request.message);
 
     if (array.size() != 2 || !array[0].is_number() || !array[1].is_number())
         return jsonrpc::Response::invalidParams();
@@ -274,7 +274,7 @@ struct Operands
 };
 bool from_json(Operands& op, const std::string& json)
 {
-    const auto object = nlohmann::json::parse(json);
+    const auto object = rockets_nlohmann::json::parse(json);
 
     if (!object.count("minuend") || !object["minuend"].is_number() ||
         !object.count("subtrahend") || !object["subtrahend"].is_number())

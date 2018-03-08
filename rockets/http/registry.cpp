@@ -103,17 +103,17 @@ Registry::FuncMap::const_iterator Registry::_find(
     return std::find_if(funcMap.begin(), funcMap.end(), beginsWithPath);
 }
 
-void _append(nlohmann::json& array, std::string&& value)
+void _append(rockets_nlohmann::json& array, std::string&& value)
 {
     if (array.is_null())
-        array = nlohmann::json::array({std::move(value)});
+        array = rockets_nlohmann::json::array({std::move(value)});
     else
         array.emplace_back(std::move(value));
 }
 
 std::string Registry::toJson() const
 {
-    auto body = nlohmann::json();
+    auto body = rockets_nlohmann::json();
     for (const auto& i : _methods[int(Method::GET)])
         _append(body[i.first], "GET");
     for (const auto& i : _methods[int(Method::POST)])
