@@ -232,7 +232,7 @@ int main(int argc, char** argv)
         {
             rpc = std::make_unique<jsonrpc::Server<rockets::Server>>(server);
             rpc->bind("echo", [](const jsonrpc::Request& req) {
-                using namespace nlohmann;
+                using namespace rockets_nlohmann;
                 const auto input = json::parse(req.message, nullptr, false);
                 if (input.count("message"))
                     return jsonrpc::Response{input["message"].dump()};

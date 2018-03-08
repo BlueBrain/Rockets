@@ -81,7 +81,7 @@ const std::string cancelledRequestResult{
 using namespace rockets;
 jsonrpc::Response substractArr(const jsonrpc::Request& request)
 {
-    const auto array = nlohmann::json::parse(request.message);
+    const auto array = rockets_nlohmann::json::parse(request.message);
 
     if (array.size() != 2 || !array[0].is_number() || !array[1].is_number())
         return jsonrpc::Response::invalidParams();

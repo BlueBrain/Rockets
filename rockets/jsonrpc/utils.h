@@ -34,7 +34,7 @@ const std::string jsonResponseParseError =
 const Response::Error internalError{"Internal error",
                                     ErrorCode::internal_error};
 
-using json = nlohmann::json;
+using json = rockets_nlohmann::json;
 
 inline json makeErrorResponse(const json& error, const json& id)
 {

@@ -22,7 +22,7 @@
 #include "../json.hpp"
 #include "errorCodes.h"
 
-using namespace nlohmann;
+using namespace rockets_nlohmann;
 
 namespace rockets
 {

@@ -46,14 +46,14 @@
 template <typename T>
 std::string to_json(const T& obj)
 {
-    nlohmann::json json;
+    rockets_nlohmann::json json;
     json["value"] = obj;
     return json.dump(4);
 }
 template <typename T>
 bool from_json(T& obj, const std::string& json)
 {
-    obj = nlohmann::json::parse(json)["value"];
+    obj = rockets_nlohmann::json::parse(json)["value"];
     return true;
 }
 
