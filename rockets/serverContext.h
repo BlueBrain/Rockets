@@ -41,7 +41,8 @@ public:
     ServerContext(const std::string& uri, const std::string& name,
                   const unsigned int threadCount,
                   lws_callback_function* callback,
-                  lws_callback_function* wsCallback, void* user);
+                  lws_callback_function* wsCallback, void* user,
+                  void* uvLoop = nullptr);
 
     ~ServerContext();
 

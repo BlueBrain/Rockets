@@ -55,12 +55,13 @@ class Server::Impl
 {
 public:
     Impl(const std::string& uri, const std::string& name,
-         const unsigned int threadCount)
+         const unsigned int threadCount, void* uvLoop)
         : handler{registry}
     {
-        context = std::make_unique<ServerContext>(uri, name, threadCount,
-                                                  callback_http,
-                                                  callback_websockets, this);
+        context =
+            std::make_unique<ServerContext>(uri, name, threadCount,
+                                            callback_http, callback_websockets,
+                                            this, uvLoop);
         if (threadCount > 0)
             serviceThreadPool = std::make_unique<ServiceThreadPool>(*context);
     }
@@ -101,12 +102,17 @@ public:
 
 Server::Server(const std::string& uri, const std::string& name,
                const unsigned int threadCount)
-    : _impl(new Impl(uri, name, threadCount))
+    : _impl(new Impl(uri, name, threadCount, nullptr))
 {
 }
 
 Server::Server(const unsigned int threadCount)
-    : _impl(new Impl(std::string(), std::string(), threadCount))
+    : _impl(new Impl(std::string(), std::string(), threadCount, nullptr))
+{
+}
+
+Server::Server(void* uvLoop, const std::string& uri, const std::string& name)
+    : _impl(new Impl(uri, name, 0, uvLoop))
 {
 }
 

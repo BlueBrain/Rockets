@@ -1,7 +1,7 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
- *                     Stefan.Eilemann@epfl.ch
- *                     Daniel.Nachbaur@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
+ *                          Stefan.Eilemann@epfl.ch
+ *                          Daniel.Nachbaur@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -67,6 +67,25 @@ public:
     ROCKETS_API Server(const std::string& uri, const std::string& name,
                        unsigned int threadCount = 0);
     ROCKETS_API explicit Server(unsigned int threadCount = 0);
+
+    /**
+     * Construct a new server and integrate it to a libuv loop.
+     *
+     * If no interface is given, the server listens on all interfaces. If no
+     * port is given, the server selects a random port. Use getURI() to retrieve
+     * the chosen parameters.
+     *
+     * All send & receive operations are automatically handled by the given
+     * libuv loop, given that libwebsockets has been built with libuv support.
+     *
+     * @param uvLoop The libuv loop to run the send & receive operations on.
+     * @param uri The server address in the form "[interface][:port]".
+     * @param name The name of the websockets protocol, disabled if empty.
+     * @throw std::runtime_error on malformed URI, connection issues or no libuv
+     * suppport.
+     */
+    ROCKETS_API Server(void* uvLoop, const std::string& uri,
+                       const std::string& name);
 
     /** Terminate the server. */
     ROCKETS_API ~Server();
