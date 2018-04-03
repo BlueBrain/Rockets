@@ -1,5 +1,6 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
+ *                          Daniel.Nachbaur@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -26,10 +27,18 @@
 
 namespace rockets
 {
+#ifdef LWS_USE_LIBUV
+#if LWS_LIBRARY_VERSION_NUMBER < 2000000
+void signal_cb(uv_signal_t*, int)
+{
+}
+#endif
+#endif
 ServerContext::ServerContext(const std::string& uri, const std::string& name,
                              const unsigned int threadCount,
                              lws_callback_function* callback,
-                             lws_callback_function* wsCallback, void* user)
+                             lws_callback_function* wsCallback, void* user,
+                             void* uvLoop)
     : protocols{make_protocol("http", callback, user), null_protocol()}
     , wsProtocolName{name}
 {
@@ -38,9 +47,31 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 
     fillContextInfo(uri, threadCount);
 
+#ifdef LWS_USE_LIBUV
+    auto uvLoop_ = reinterpret_cast<uv_loop_t*>(uvLoop);
+    const bool uvLoopRunning = uvLoop && uv_loop_alive(uvLoop_) != 0;
+    if (uvLoop && !uvLoopRunning)
+        throw std::runtime_error(
+            "provided libuv loop either not valid or not running");
+    if (uvLoopRunning)
+        info.options |= LWS_SERVER_OPTION_LIBUV;
+#else
+    if (uvLoop)
+        throw std::runtime_error("libwebsockets has no support for libuv");
+#endif
+
     context = lws_create_context(&info);
     if (!context)
         throw std::runtime_error("libwebsocket init failed");
+
+#ifdef LWS_USE_LIBUV
+    if (uvLoopRunning)
+#if LWS_LIBRARY_VERSION_NUMBER < 2000000
+        lws_uv_initloop(context, uvLoop_, &signal_cb, 0);
+#else
+        lws_uv_initloop(context, uvLoop_, 0);
+#endif
+#endif
 }
 
 ServerContext::~ServerContext()
