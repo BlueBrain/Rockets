@@ -111,6 +111,8 @@ void ServerContext::fillContextInfo(const std::string& uri,
     info.ssl_private_key_filepath = nullptr;
     info.gid = -1;
     info.uid = -1;
+    // header size: accommodate long "Authorization: Negotiate <kerberos token>"
+    info.max_http_header_data = 8192;
     // service threads
     info.count_threads = threadCount;
     info.max_http_header_pool = threadCount;
