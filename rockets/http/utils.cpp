@@ -30,11 +30,11 @@ std::string to_string(const CorsResponseHeader header)
     switch (header)
     {
     case CorsResponseHeader::access_control_allow_headers:
-        return "Access-Control-Allow-Headers";
+        return "access-control-allow-headers";
     case CorsResponseHeader::access_control_allow_methods:
-        return "Access-Control-Allow-Methods";
+        return "access-control-allow-methods";
     case CorsResponseHeader::access_control_allow_origin:
-        return "Access-Control-Allow-Origin";
+        return "access-control-allow-origin";
     default:
         throw std::logic_error("no such header");
     }
