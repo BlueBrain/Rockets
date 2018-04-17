@@ -28,6 +28,7 @@ namespace http
 {
 namespace
 {
+const int HEADERS_BUFFER_SIZE = 4096;
 const int MAX_HEADER_LENGTH = 512;
 const int MAX_QUERY_PARAM_LENGTH = 4096;
 const std::string JSON_TYPE = "application/json";
@@ -136,9 +137,10 @@ void Channel::requestCallback()
 int Channel::write(const Response& response,
                    const CorsResponseHeaders& corsHeaders)
 {
-    unsigned char buffer[4096];
-    unsigned char* p = buffer;
-    unsigned char* end = p + sizeof(buffer);
+    unsigned char buffer[HEADERS_BUFFER_SIZE];
+    unsigned char* const start = buffer + LWS_PRE;
+    unsigned char* const end = buffer + sizeof(buffer);
+    unsigned char* p = start;
 
     if (lws_add_http_header_status(wsi, response.code, &p, end))
         return 1;
@@ -171,10 +173,9 @@ int Channel::write(const Response& response,
     if (lws_finalize_http_header(wsi, &p, end))
         return 1;
 
-    lws_write(wsi, buffer, p - buffer, LWS_WRITE_HTTP_HEADERS);
+    lws_write(wsi, start, p - start, LWS_WRITE_HTTP_HEADERS);
 
-    lws_write(wsi, (unsigned char*)(response.body.c_str()),
-              response.body.size(), LWS_WRITE_HTTP_FINAL);
+    _write(response.body, LWS_WRITE_HTTP_FINAL);
 
     // Close and free connection if complete, else keep open
     return lws_http_transaction_completed(wsi) ? -1 : 0;
@@ -183,10 +184,7 @@ int Channel::write(const Response& response,
 #if LWS_LIBRARY_VERSION_NUMBER >= 2001000
 int Channel::writeRequestBody(const std::string& body)
 {
-    // body must be pre-padded before it can be written
-    const auto buffer = std::string(LWS_PRE, '\0').append(body);
-    const auto ptr = (unsigned char*)(&buffer.at(LWS_PRE));
-    if (lws_write(wsi, ptr, body.size(), LWS_WRITE_HTTP) < 0)
+    if (!_write(body, LWS_WRITE_HTTP))
         return -1;
 
     // Tell libwebsockets that we have finished sending the headers + body
@@ -221,7 +219,7 @@ int Channel::writeRequestHeader(const std::string& body, unsigned char** buffer,
     if (body.empty())
         return 0;
 
-    const auto end = *buffer + bufferSize;
+    const auto end = *buffer + bufferSize - 1;
 
     const auto length = std::to_string(body.size());
     const auto data = (unsigned char*)length.c_str();
@@ -236,6 +234,7 @@ int Channel::writeRequestHeader(const std::string& body, unsigned char** buffer,
     {
         return -1;
     }
+
     /* inform lws we have http body to send */
     lws_client_http_body_pending(wsi, 1);
     lws_callback_on_writable(wsi);
@@ -256,6 +255,14 @@ std::string Channel::_readHeader(const lws_token_indexes token) const
     char buf[MAX_HEADER_LENGTH];
     lws_hdr_copy(wsi, buf, length, token);
     return std::string(buf, (size_t)(length - 1));
+}
+
+bool Channel::_write(const std::string& message, lws_write_protocol protocol)
+{
+    auto buffer = std::string(LWS_PRE, '\0');
+    buffer.append(message);
+    auto data = (unsigned char*)(&buffer.data()[LWS_PRE]);
+    return lws_write(wsi, data, message.size(), protocol) >= 0;
 }
 }
 }

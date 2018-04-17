@@ -67,6 +67,8 @@ private:
     lws* wsi = nullptr;
 
     std::string _readHeader(lws_token_indexes token) const;
+    void _writeResponseBody(const std::string& message);
+    bool _write(const std::string& message, lws_write_protocol protocol);
 };
 }
 }
