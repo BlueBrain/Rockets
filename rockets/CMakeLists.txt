@@ -39,6 +39,7 @@ set(ROCKETS_PUBLIC_HEADERS
   jsonrpc/asyncReceiver.h
   jsonrpc/cancellableReceiver.h
   jsonrpc/client.h
+  jsonrpc/clientRequest.h
   jsonrpc/errorCodes.h
   jsonrpc/helpers.h
   jsonrpc/http.h
@@ -96,6 +97,7 @@ set(ROCKETS_SOURCES
   http/utils.cpp
   jsonrpc/asyncReceiver.cpp
   jsonrpc/cancellableReceiver.cpp
+  jsonrpc/clientRequest.cpp
   jsonrpc/helpers.cpp
   jsonrpc/http.cpp
   jsonrpc/notifier.cpp

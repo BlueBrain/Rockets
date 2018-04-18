@@ -152,7 +152,7 @@ BOOST_FIXTURE_TEST_CASE(bind_async_with_params, Fixture)
 {
     jsonRpcAsync.bindAsync<Operands>(
         "subtract",
-        [](const Operands op, uintptr_t, jsonrpc::AsyncResponse callback) {
+        [](const Operands op, jsonrpc::AsyncResponse callback) {
             callback(jsonrpc::Response{std::to_string(op.left - op.right)});
         });
     BOOST_CHECK_EQUAL(jsonRpcAsync.processAsync(substractObject).get(),

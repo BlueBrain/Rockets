@@ -59,13 +59,13 @@ public:
      */
     template <typename Params>
     void bindAsync(const std::string& method,
-                   std::function<void(Params, uintptr_t, AsyncResponse)> action)
+                   std::function<void(Params, AsyncResponse)> action)
     {
         bindAsync(method,
                   [action](const Request& request, AsyncResponse callback) {
                       Params params;
                       if (from_json(params, request.message))
-                          action(std::move(params), request.clientID, callback);
+                          action(std::move(params), callback);
                       else
                           callback(Response::invalidParams());
                   });

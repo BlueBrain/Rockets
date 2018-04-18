@@ -89,25 +89,25 @@ BOOST_FIXTURE_TEST_CASE(json_rpc_over_http, Fixture)
     auto response4 = client.request("substract", "[15]");
 
     auto maxTry = 1000;
-    while (--maxTry && (!is_ready(response1) || !is_ready(response2) ||
-                        !is_ready(response3) || !is_ready(response4)))
+    while (--maxTry && (!response1.is_ready() || !response2.is_ready() ||
+                        !response3.is_ready() || !response4.is_ready()))
     {
         httpClient.process(10);
         httpServer.process(10);
     }
 
-    BOOST_REQUIRE(is_ready(response1));
+    BOOST_REQUIRE(response1.is_ready());
     BOOST_CHECK_EQUAL(response1.get().result, "19");
 
-    BOOST_REQUIRE(is_ready(response2));
+    BOOST_REQUIRE(response2.is_ready());
     const auto error2 = response2.get();
     BOOST_CHECK_EQUAL(error2.error.message, "Invalid params");
     BOOST_CHECK_EQUAL(error2.error.code, -32602);
 
-    BOOST_REQUIRE(is_ready(response3));
+    BOOST_REQUIRE(response3.is_ready());
     BOOST_CHECK_EQUAL(response3.get().result, "-17");
 
-    BOOST_REQUIRE(is_ready(response4));
+    BOOST_REQUIRE(response4.is_ready());
     const auto error4 = response4.get();
     BOOST_CHECK_EQUAL(error4.error.message, "Invalid params");
     BOOST_CHECK_EQUAL(error4.error.code, -32602);
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(abort_pending_request)
     auto response = clientStack->client.request("substract", "[42, 23]");
     clientStack.reset();
 
-    BOOST_REQUIRE(is_ready(response));
+    BOOST_REQUIRE(response.is_ready());
     const auto error = response.get();
     BOOST_CHECK_EQUAL(error.error.message,
                       "Requester was destroyed before receiving a response");

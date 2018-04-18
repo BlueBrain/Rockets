@@ -59,10 +59,10 @@ jsonrpc::Response request_http(const std::string& url,
     jsonrpc::HttpCommunicator communicator{httpClient, url};
     jsonrpc::Client<jsonrpc::HttpCommunicator> client{communicator};
 
-    auto res = client.request(method, params);
-    while (!is_ready(res))
+    auto request = client.request(method, params);
+    while (!request.is_ready())
         httpClient.process(250);
-    return res.get();
+    return request.get();
 }
 
 jsonrpc::Response request_ws(const std::string& url, const std::string& method,
@@ -76,10 +76,10 @@ jsonrpc::Response request_ws(const std::string& url, const std::string& method,
     connection.get();
 
     jsonrpc::Client<ws::Client> client{wsClient};
-    auto res = client.request(method, params);
-    while (!is_ready(res))
+    auto request = client.request(method, params);
+    while (!request.is_ready())
         wsClient.process(250);
-    return res.get();
+    return request.get();
 }
 
 jsonrpc::Response request(const std::string& url, const std::string& method,

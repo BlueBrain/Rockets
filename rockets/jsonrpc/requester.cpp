@@ -101,19 +101,21 @@ Requester::~Requester()
         it.second(destructionError);
 }
 
-std::future<Response> Requester::request(const std::string& method,
-                                         const std::string& params)
+ClientRequest<Response> Requester::request(const std::string& method,
+                                           const std::string& params)
 {
     auto promise = std::make_shared<std::promise<Response>>();
     auto callback = [promise](Response response) {
         promise->set_value(std::move(response));
     };
-    request(method, params, callback);
-    return promise->get_future();
+    return {request(method, params, callback), promise->get_future(),
+            [this](std::string method_, std::string params_) {
+                notify(method_, params_);
+            }};
 }
 
-void Requester::request(const std::string& method, const std::string& params,
-                        AsyncResponse callback)
+size_t Requester::request(const std::string& method, const std::string& params,
+                          AsyncResponse callback)
 {
     try
     {
@@ -129,6 +131,7 @@ void Requester::request(const std::string& method, const std::string& params,
     {
         callback(Response::invalidParams());
     }
+    return _impl->lastId - 1;
 }
 
 bool Requester::processResponse(const std::string& json)
