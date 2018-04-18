@@ -97,7 +97,7 @@ jsonrpc::CancelRequestCallback substractArrAsync(
         usleep(500);
         callback(substractArr(request));
     }).detach();
-    return [](jsonrpc::VoidCallback done) { done(); };
+    return {};
 }
 
 std::mutex forever;
@@ -123,7 +123,7 @@ void cancelNOP()
 
 struct Fixture
 {
-    jsonrpc::CancellableReceiver jsonRpc;
+    jsonrpc::CancellableReceiver jsonRpc{[](std::string, uintptr_t) {}};
 };
 
 BOOST_FIXTURE_TEST_CASE(invalid_bind, Fixture)

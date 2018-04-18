@@ -181,11 +181,11 @@ BOOST_FIXTURE_TEST_CASE(client_request_answered_by_server_using_future, Fixture)
         serverReceivedRequest = (request.message == simpleMessage);
         return jsonrpc::Response{"\"42\""};
     });
-    auto future = client.request("test", simpleMessage);
+    auto request = client.request("test", simpleMessage);
     BOOST_CHECK(serverReceivedRequest);
-    BOOST_REQUIRE(is_ready(future));
+    BOOST_REQUIRE(request.is_ready());
 
-    const jsonrpc::Response response = future.get();
+    const jsonrpc::Response response = request.get();
     BOOST_CHECK(!response.isError());
     BOOST_CHECK_EQUAL(response.result, "\"42\"");
 }
@@ -198,18 +198,18 @@ BOOST_FIXTURE_TEST_CASE(client_templated_request_answered_by_server, Fixture)
         serverReceivedRequest = (request == message);
         return 42;
     });
-    auto future = client.request<std::string, int>("test", message);
+    auto request = client.request<std::string, int>("test", message);
     BOOST_CHECK(serverReceivedRequest);
-    BOOST_REQUIRE(is_ready(future));
-    BOOST_CHECK_EQUAL(future.get(), 42);
+    BOOST_REQUIRE(request.is_ready());
+    BOOST_CHECK_EQUAL(request.get(), 42);
 }
 
 BOOST_FIXTURE_TEST_CASE(client_templated_request_with_no_parameter, Fixture)
 {
     server.bind<int>("test", [&] { return 42; });
-    auto future = client.request<int>("test");
-    BOOST_REQUIRE(is_ready(future));
-    BOOST_CHECK_EQUAL(future.get(), 42);
+    auto request = client.request<int>("test");
+    BOOST_REQUIRE(request.is_ready());
+    BOOST_CHECK_EQUAL(request.get(), 42);
 }
 
 BOOST_FIXTURE_TEST_CASE(client_notification_generates_no_response, Fixture)
@@ -232,4 +232,24 @@ BOOST_FIXTURE_TEST_CASE(server_notification_received_by_client, Fixture)
     });
     server.notify("test", simpleMessage);
     BOOST_CHECK(received);
+}
+
+BOOST_FIXTURE_TEST_CASE(client_cancel_request, Fixture)
+{
+    using namespace std::placeholders;
+
+    std::mutex forever;
+    server.bindAsync("forever",
+                     [&forever](const jsonrpc::Request&, jsonrpc::AsyncResponse,
+                                jsonrpc::ProgressUpdateCallback) {
+                         std::thread([&]() { forever.lock(); }).detach();
+                         return [&](jsonrpc::VoidCallback done) {
+                             forever.unlock();
+                             done();
+                         };
+                     });
+    auto request = client.request<bool>("forever");
+    BOOST_REQUIRE(!request.is_ready());
+    request.cancel();
+    BOOST_CHECK(request.is_ready());
 }

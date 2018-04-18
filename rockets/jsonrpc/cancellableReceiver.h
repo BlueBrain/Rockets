@@ -58,8 +58,7 @@ class CancellableReceiver : public AsyncReceiver
 {
 public:
     /** Constructor. */
-    CancellableReceiver(SendTextCallback sendTextCb = [](std::string,
-                                                         uintptr_t) {});
+    explicit CancellableReceiver(SendTextCallback sendTextCb);
 
     /**
      * Bind a cancellable method to an async response callback.
@@ -81,8 +80,6 @@ public:
      *
      * @param method to register.
      * @param action to perform that will notify the caller upon completion.
-     * @param cancel callback if request has been cancelled with the "cancel"
-     *               notification.
      * @throw std::invalid_argument if the method name starts with "rpc." or
      *                              "cancel"
      */
@@ -101,7 +98,7 @@ public:
                           return action(std::move(params), request.clientID,
                                         callback, progressUpdate);
                       callback(Response::invalidParams());
-                      return CancelRequestCallback();
+                      return CancelRequestCallback{};
                   });
     }
 };

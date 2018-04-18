@@ -20,6 +20,7 @@
 #ifndef ROCKETS_JSONRPC_REQUESTER_H
 #define ROCKETS_JSONRPC_REQUESTER_H
 
+#include <rockets/jsonrpc/clientRequest.h>
 #include <rockets/jsonrpc/notifier.h>
 #include <rockets/jsonrpc/responseError.h>
 #include <rockets/jsonrpc/types.h>
@@ -45,10 +46,11 @@ public:
      *
      * @param method to call.
      * @param params for the request in json format (optional).
-     * @return future result, can contain a possible error code, but not throw.
+     * @return request with future result, can contain a possible error code,
+     *         but not throw.
      */
-    std::future<Response> request(const std::string& method,
-                                  const std::string& params);
+    ClientRequest<Response> request(const std::string& method,
+                                    const std::string& params);
 
     /**
      * Make a request.
@@ -56,9 +58,10 @@ public:
      * @param method to call.
      * @param params for the request in json format (optional).
      * @param callback to handle the result, including a possible error code.
+     * @return ID of the request
      */
-    void request(const std::string& method, const std::string& params,
-                 AsyncResponse callback);
+    size_t request(const std::string& method, const std::string& params,
+                   AsyncResponse callback);
 
     /**
      * Make a request with templated parameters and result.
@@ -66,13 +69,15 @@ public:
      * @param method to call.
      * @param params for the request, must be serializable to JSON with
      *               `std::string to_json(const Params&)`
-     * @return result of the request, must be serializable from JSON with
+     * @return Request containing the result of the request, must be
+     *         serializable from JSON with
      *         `bool from_json(RetVal& obj, const std::string& json)`
      * @throw response_error if request returns error or from_json on RetVal
      * failed
      */
     template <typename Params, typename RetVal>
-    std::future<RetVal> request(const std::string& method, const Params& params)
+    ClientRequest<RetVal> request(const std::string& method,
+                                  const Params& params)
     {
         auto promise = std::make_shared<std::promise<RetVal>>();
         auto callback = [promise](Response response) {
@@ -88,21 +93,25 @@ public:
                     promise->set_value(std::move(value));
             }
         };
-        request(method, to_json(params), callback);
-        return promise->get_future();
+        return {request(method, to_json(params), callback),
+                promise->get_future(),
+                [this](std::string method_, std::string params_) {
+                    notify(method_, params_);
+                }};
     }
 
     /**
      * Make a request with no parameters, but a typed result.
      *
      * @param method to call.
-     * @return result of the request, must be serializable from JSON with
+     * @return Request containing the result of the request, must be
+     *         serializable from JSON with
      *         `bool from_json(RetVal& obj, const std::string& json)`
      * @throw response_error if request returns error or from_json on RetVal
      * failed
      */
     template <typename RetVal>
-    std::future<RetVal> request(const std::string& method)
+    ClientRequest<RetVal> request(const std::string& method)
     {
         auto promise = std::make_shared<std::promise<RetVal>>();
         auto callback = [promise](Response response) {
@@ -118,8 +127,10 @@ public:
                     promise->set_value(std::move(value));
             }
         };
-        request(method, "", callback);
-        return promise->get_future();
+        return {request(method, "", callback), promise->get_future(),
+                [this](std::string method_, std::string params_) {
+                    notify(method_, params_);
+                }};
     }
 
 protected:
