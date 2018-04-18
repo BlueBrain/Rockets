@@ -77,6 +77,7 @@ struct MockServerCommunicator
         handleMessageAsync = callback;
     }
 
+    void sendText(std::string, uintptr_t) {}
     void sendText(std::string message)
     {
         auto ret = sendToRemoteEndpoint({message});
@@ -100,6 +101,7 @@ struct MockClientCommunicator
         handleMessage = std::move(callback);
     }
 
+    void sendText(std::string, uintptr_t) {}
     void sendText(std::string message)
     {
         auto handleResponse = [this](std::string ret) {

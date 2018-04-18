@@ -18,62 +18,51 @@
  */
 
 #include "receiver.h"
-#include "requestProcessor.h"
+#include "receiverImpl.h"
 #include "utils.h"
 
 namespace rockets
 {
 namespace jsonrpc
 {
-class Receiver::Impl : public RequestProcessor
-{
-public:
-    bool _isValidMethodName(const std::string& method) const final
-    {
-        return _methods.find(method) != _methods.end();
-    }
-
-    void _registerMethod(const std::string& method,
-                         DelayedResponseCallback action)
-    {
-        _methods[method] = action;
-    }
-
-    void _process(const json& requestID, const std::string& method,
-                  const Request& request, JsonResponseCallback respond) final
-    {
-        const auto& func = _methods[method];
-        func(request, [respond, requestID](const Response rep) {
-            // No reply for valid "notifications" (requests without an "id")
-            if (requestID.is_null())
-                respond(json());
-            else
-                respond(makeResponse(rep, requestID));
-        });
-    }
-
-private:
-    std::map<std::string, DelayedResponseCallback> _methods;
-};
-
 Receiver::Receiver()
-    : _impl{new Impl}
+    : _impl{new ReceiverImpl}
 {
 }
 
-Receiver::~Receiver()
+Receiver::Receiver(RequestProcessor* impl)
+    : _impl(impl)
 {
 }
 
-void Receiver::_process(const Request& request, AsyncStringResponse callback)
+void Receiver::connect(const std::string& method, VoidCallback action)
 {
-    _impl->process(request, callback);
+    bind(method, [action](const Request&) {
+        action();
+        return Response{"\"OK\""};
+    });
 }
 
-void Receiver::_registerMethod(const std::string& method,
-                               DelayedResponseCallback action)
+void Receiver::connect(const std::string& method, NotifyCallback action)
 {
-    _impl->_registerMethod(method, action);
+    bind(method, [action](const Request& request) {
+        action(request);
+        return Response{"\"OK\""};
+    });
+}
+
+void Receiver::bind(const std::string& method, ResponseCallback action)
+{
+    std::static_pointer_cast<ReceiverImpl>(_impl)->registerMethod(method,
+                                                                  action);
+}
+
+std::string Receiver::process(const Request& request)
+{
+    std::string result;
+    _impl->process(request,
+                   [&result](std::string result_) { result = result_; });
+    return result;
 }
 }
 }

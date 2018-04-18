@@ -32,11 +32,28 @@ namespace jsonrpc
 {
 using ws::Request;
 
+class RequestProcessor;
+
 /** @name Asynchronous response to a request. */
 //@{
 using AsyncResponse = std::function<void(Response)>;
 using AsyncStringResponse = std::function<void(std::string)>;
 //@}
+
+/** @name Callbacks that can be registered. */
+//@{
+using VoidCallback = std::function<void()>;
+using NotifyCallback = std::function<void(Request)>;
+using ResponseCallback = std::function<Response(Request)>;
+using CancelRequestCallback = std::function<void(VoidCallback)>;
+using ProgressUpdateCallback = std::function<void(std::string, float)>;
+using DelayedResponseCallback = std::function<void(Request, AsyncResponse)>;
+using CancellableResponseCallback =
+    std::function<CancelRequestCallback(Request, AsyncResponse,
+                                        ProgressUpdateCallback)>;
+//@}
+
+using SendTextCallback = std::function<void(std::string, uintptr_t)>;
 }
 }
 

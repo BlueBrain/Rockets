@@ -29,6 +29,9 @@ namespace jsonrpc
 namespace
 {
 const std::string reservedMethodPrefix = "rpc.";
+const char* reservedMethodError =
+    "Method names starting with 'rpc.' are "
+    "reserved by the standard / forbidden.";
 
 const Response::Error parseError{"Parse error", ErrorCode::parse_error};
 const Response::Error invalidRequest{"Invalid Request",
@@ -69,6 +72,12 @@ void RequestProcessor::process(const Request& request,
         callback(_processBatchBlocking(document, request.clientID));
     else
         callback(dump(makeErrorResponse(parseError)));
+}
+
+void RequestProcessor::verifyValidMethodName(const std::string& method) const
+{
+    if (begins_with(method, reservedMethodPrefix))
+        throw std::invalid_argument(reservedMethodError);
 }
 
 std::string RequestProcessor::_processBatchBlocking(const json& array,
@@ -125,7 +134,7 @@ void RequestProcessor::_processCommand(const json& request,
     }
 
     const auto methodName = request["method"].get<std::string>();
-    if (!_isValidMethodName(methodName))
+    if (!isRegisteredMethodName(methodName))
     {
         if (isNotification)
             respond(json());
@@ -137,7 +146,7 @@ void RequestProcessor::_processCommand(const json& request,
     const auto params =
         request.find("params") == request.end() ? "" : dump(request["params"]);
 
-    _process(id, methodName, {params, clientID}, respond);
+    process(id, methodName, {params, clientID}, respond);
 }
 }
 }

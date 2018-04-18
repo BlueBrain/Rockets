@@ -37,13 +37,13 @@ set(ROCKETS_PUBLIC_HEADERS
   http/response.h
   http/types.h
   jsonrpc/asyncReceiver.h
+  jsonrpc/cancellableReceiver.h
   jsonrpc/client.h
   jsonrpc/errorCodes.h
   jsonrpc/helpers.h
   jsonrpc/http.h
   jsonrpc/notifier.h
   jsonrpc/receiver.h
-  jsonrpc/receiverInterface.h
   jsonrpc/requester.h
   jsonrpc/response.h
   jsonrpc/responseError.h
@@ -71,6 +71,9 @@ set(ROCKETS_HEADERS
   http/registry.h
   http/requestHandler.h
   http/utils.h
+  jsonrpc/asyncReceiverImpl.h
+  jsonrpc/cancellableReceiverImpl.h
+  jsonrpc/receiverImpl.h
   jsonrpc/requestProcessor.h
   ws/channel.h
   ws/connection.h
@@ -92,11 +95,11 @@ set(ROCKETS_SOURCES
   http/requestHandler.cpp
   http/utils.cpp
   jsonrpc/asyncReceiver.cpp
+  jsonrpc/cancellableReceiver.cpp
   jsonrpc/helpers.cpp
   jsonrpc/http.cpp
   jsonrpc/notifier.cpp
   jsonrpc/receiver.cpp
-  jsonrpc/receiverInterface.cpp
   jsonrpc/requester.cpp
   jsonrpc/requestProcessor.cpp
   ws/channel.cpp

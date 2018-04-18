@@ -63,17 +63,13 @@ public:
     }
 
 private:
-    /** Emitter::_send */
+    /** Notifier::_send */
     void _send(std::string json) final
     {
         communicator.sendText(std::move(json));
     }
 
-    void _processNotification(const Request& request_)
-    {
-        process(request_, [](std::string) { /* Client should never reply. */ });
-    }
-
+    void _processNotification(const Request& request_) { process(request_); }
     Communicator& communicator;
     std::shared_ptr<bool> status = std::make_shared<bool>(true);
 };
