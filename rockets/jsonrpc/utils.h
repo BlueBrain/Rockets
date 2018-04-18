@@ -44,9 +44,10 @@ inline json makeErrorResponse(const json& error, const json& id)
 inline json makeErrorResponse(const Response::Error& error,
                               const json& id = json())
 {
-    return makeErrorResponse(json{{"code", error.code},
-                                  {"message", error.message}},
-                             id);
+    json jsonError{{"code", error.code}, {"message", error.message}};
+    if (!error.data.empty())
+        jsonError["data"] = json::parse(error.data);
+    return makeErrorResponse(jsonError, id);
 }
 
 inline json makeErrorResponse(const Response::Error& error, const json& id,

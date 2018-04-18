@@ -74,8 +74,10 @@ Response makeResponse(const json& object)
     if (object.count("error"))
     {
         const auto& error = object["error"];
-        return Response{Response::Error{error["message"].get<std::string>(),
-                                        error["code"].get<int>()}};
+        return Response{
+            Response::Error{error["message"].get<std::string>(),
+                            error["code"].get<int>(),
+                            error.count("data") ? error["data"].dump(4) : ""}};
     }
     return Response{object["result"].dump(4)};
 }

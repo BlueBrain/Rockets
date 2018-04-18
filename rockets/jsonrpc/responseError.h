@@ -39,10 +39,12 @@ public:
     explicit response_error(const Response::Error& error)
         : std::runtime_error(error.message)
         , code(error.code)
+        , data(error.data)
     {
     }
 
     const int code;
+    const std::string data;
 };
 }
 }
