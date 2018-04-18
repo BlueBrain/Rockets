@@ -39,6 +39,7 @@ struct Response
     {
         std::string message; // short text description of the error
         int code = 0;
+        std::string data{};
     } error;
 
     /**
