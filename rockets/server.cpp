@@ -204,6 +204,17 @@ void Server::broadcastText(const std::string& message,
     _impl->requestBroadcast();
 }
 
+void Server::sendText(const std::string& message, uintptr_t client)
+{
+    std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
+    for (auto& connection : _impl->wsConnections)
+    {
+        if (client == reinterpret_cast<uintptr_t>(&connection.second))
+            connection.second.enqueueText(message);
+    }
+    _impl->requestBroadcast();
+}
+
 void Server::broadcastBinary(const char* data, const size_t size)
 {
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
