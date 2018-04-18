@@ -204,6 +204,9 @@ public:
     ROCKETS_API void broadcastText(const std::string& message,
                                    const std::set<uintptr_t>& filter);
 
+    /** Send a text message to the given client. */
+    ROCKETS_API void sendText(const std::string& message, uintptr_t client);
+
     /** Broadcast a binary message to all websocket clients. */
     ROCKETS_API void broadcastBinary(const char* data, size_t size);
 
