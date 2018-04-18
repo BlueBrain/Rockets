@@ -1,5 +1,5 @@
 /* Copyright (c) 2017-2018, EPFL/Blue Brain Project
- *                          Daniel.Nachbaur@epfl.ch
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -20,84 +20,76 @@
 #ifndef ROCKETS_JSONRPC_ASYNC_RECEIVER_H
 #define ROCKETS_JSONRPC_ASYNC_RECEIVER_H
 
-#include <rockets/jsonrpc/receiverInterface.h>
+#include <rockets/jsonrpc/receiver.h>
+
+#include <future>
 
 namespace rockets
 {
 namespace jsonrpc
 {
 /**
- * A receiver for synchronous and asynchronous request processing, where
- * asychronous requests can be cancelled with a reserved RPC.
- *
- * The cancel notification needs to have the following payload:
- *
- * @code{.json}
- * {
- *   "jsonrpc": "2.0",
- *   "method": "cancel",
- *   "params": { "id": <request_to_cancel> }
- * }
- * @endcode
+ * Extends the synchronous receiver by providing asynchronous processing of
+ * requests.
  */
-class AsyncReceiver : public ReceiverInterface
+class AsyncReceiver : public Receiver
 {
 public:
-    using CancelRequestCallback = std::function<void()>;
-
     /** Constructor. */
     AsyncReceiver();
 
     /**
-     * Bind a cancellable method to an async response callback.
+     * Bind a method to an async response callback.
      *
      * @param method to register.
      * @param action to perform that will notify the caller upon completion.
-     * @param cancel callback if request has been cancelled with the "cancel"
-     *               notification.
-     * @throw std::invalid_argument if the method name starts with "rpc." or
-     *                              "cancel"
+     * @throw std::invalid_argument if the method name starts with "rpc."
      */
-    void bindAsync(const std::string& method, DelayedResponseCallback action,
-                   CancelRequestCallback cancel);
+    void bindAsync(const std::string& method, DelayedResponseCallback action);
 
     /**
-     * Bind a cancellable method to an async response callback with templated
-     * parameters.
+     * Bind a method to an async response callback with templated parameters.
      *
      * The parameters object must be deserializable by a free function:
      * from_json(Params& object, const std::string& json).
      *
      * @param method to register.
      * @param action to perform that will notify the caller upon completion.
-     * @param cancel callback if request has been cancelled with the "cancel"
-     *               notification.
-     * @throw std::invalid_argument if the method name starts with "rpc." or
-     *                              "cancel"
+     * @throw std::invalid_argument if the method name starts with "rpc."
      */
     template <typename Params>
     void bindAsync(const std::string& method,
-                   std::function<void(Params, AsyncResponse)> action,
-                   CancelRequestCallback cancel)
+                   std::function<void(Params, uintptr_t, AsyncResponse)> action)
     {
         bindAsync(method,
                   [action](const Request& request, AsyncResponse callback) {
                       Params params;
                       if (from_json(params, request.message))
-                          action(std::move(params), callback);
+                          action(std::move(params), request.clientID, callback);
                       else
                           callback(Response::invalidParams());
-                  },
-                  cancel);
+                  });
     }
 
-private:
-    class Impl;
-    std::shared_ptr<Impl> _impl;
+    /**
+     * Process a JSON-RPC request asynchronously.
+     *
+     * @param request Request object with message in JSON-RPC 2.0 format.
+     * @return future json response string in JSON-RPC 2.0 format.
+     */
+    std::future<std::string> processAsync(const Request& request);
 
-    void _process(const Request& request, AsyncStringResponse callback) final;
-    void _registerMethod(const std::string& method,
-                         DelayedResponseCallback action) final;
+    /**
+     * Process a JSON-RPC request asynchronously.
+     *
+     * @param request Request object with message in JSON-RPC 2.0 format.
+     * @param callback that return a json response string in JSON-RPC 2.0
+     *        format upon request completion.
+     */
+    void process(const Request& request, AsyncStringResponse callback);
+
+protected:
+    AsyncReceiver(RequestProcessor* impl);
 };
 }
 }

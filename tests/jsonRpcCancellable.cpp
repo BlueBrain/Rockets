@@ -37,12 +37,12 @@
 /* or implied, of Ecole polytechnique federale de Lausanne.          */
 /*********************************************************************/
 
-#define BOOST_TEST_MODULE rockets_asyncJsonRpc
+#define BOOST_TEST_MODULE rockets_jsonRpcCancellable
 
 #include <boost/test/unit_test.hpp>
 
 #include "rockets/json.hpp"
-#include "rockets/jsonrpc/asyncReceiver.h"
+#include "rockets/jsonrpc/cancellableReceiver.h"
 
 #include <iostream>
 #include <thread>
@@ -90,20 +90,26 @@ jsonrpc::Response substractArr(const jsonrpc::Request& request)
     return {std::to_string(value)};
 }
 
-void substractArrAsync(const jsonrpc::Request& request,
-                       jsonrpc::AsyncResponse callback)
+jsonrpc::CancelRequestCallback substractArrAsync(
+    const jsonrpc::Request& request, jsonrpc::AsyncResponse callback)
 {
     std::thread([request, callback]() {
         usleep(500);
         callback(substractArr(request));
     }).detach();
+    return [](jsonrpc::VoidCallback done) { done(); };
 }
 
 std::mutex forever;
 
-void substractArrAsyncForever(const jsonrpc::Request&, jsonrpc::AsyncResponse)
+jsonrpc::CancelRequestCallback substractArrAsyncForever(const jsonrpc::Request&,
+                                                        jsonrpc::AsyncResponse)
 {
-    forever.lock();
+    std::thread([&]() { forever.lock(); }).detach();
+    return [&](jsonrpc::VoidCallback done) {
+        forever.unlock();
+        done();
+    };
 }
 
 void cancelTooLongTakingFunction()
@@ -117,15 +123,14 @@ void cancelNOP()
 
 struct Fixture
 {
-    jsonrpc::AsyncReceiver jsonRpc;
+    jsonrpc::CancellableReceiver jsonRpc;
 };
 
 BOOST_FIXTURE_TEST_CASE(invalid_bind, Fixture)
 {
     using namespace std::placeholders;
     BOOST_CHECK_THROW(jsonRpc.bindAsync("cancel",
-                                        std::bind(&substractArrAsync, _1, _2),
-                                        cancelNOP),
+                                        std::bind(&substractArrAsync, _1, _2)),
                       std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.bind("cancel", std::bind(&substractArr, _1)),
                       std::invalid_argument);
@@ -134,8 +139,7 @@ BOOST_FIXTURE_TEST_CASE(invalid_bind, Fixture)
 BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel, Fixture)
 {
     using namespace std::placeholders;
-    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2),
-                      cancelTooLongTakingFunction);
+    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2));
 
     auto processResult = jsonRpc.processAsync(substractArray);
     std::atomic_bool done{false};
@@ -147,7 +151,7 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel, Fixture)
     while (!done)
     {
         usleep(500);
-        BOOST_CHECK(jsonRpc.process(cancelSubstractArray).empty());
+        BOOST_CHECK(jsonRpc.processAsync(cancelSubstractArray).get().empty());
     }
 
     waitForResult.join();
@@ -156,8 +160,7 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel, Fixture)
 BOOST_FIXTURE_TEST_CASE(process_invalid_cancel_message, Fixture)
 {
     using namespace std::placeholders;
-    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2),
-                      cancelTooLongTakingFunction);
+    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2));
 
     auto processResult = jsonRpc.processAsync(substractArray);
     std::atomic_bool done{false};
@@ -166,14 +169,14 @@ BOOST_FIXTURE_TEST_CASE(process_invalid_cancel_message, Fixture)
         done = true;
     });
 
-    BOOST_CHECK(jsonRpc.process(invalidCancelNoParam).empty());
+    BOOST_CHECK(jsonRpc.processAsync(invalidCancelNoParam).get().empty());
     BOOST_CHECK(!done);
 
-    BOOST_CHECK(jsonRpc.process(invalidCancelNoID).empty());
+    BOOST_CHECK(jsonRpc.processAsync(invalidCancelNoID).get().empty());
     BOOST_CHECK(!done);
 
     while (!done)
-        BOOST_CHECK(jsonRpc.process(cancelSubstractArray).empty());
+        BOOST_CHECK(jsonRpc.processAsync(cancelSubstractArray).get().empty());
 
     waitForResult.join();
 }
@@ -181,15 +184,14 @@ BOOST_FIXTURE_TEST_CASE(process_invalid_cancel_message, Fixture)
 BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel_but_also_finished, Fixture)
 {
     using namespace std::placeholders;
-    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2),
-                      cancelNOP);
+    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2));
 
     auto processResult = jsonRpc.processAsync(substractArray);
     std::thread waitForResult([this, &processResult] {
         BOOST_CHECK_EQUAL(processResult.get(), cancelledRequestResult);
     });
 
-    BOOST_CHECK(jsonRpc.process(cancelSubstractArray).empty());
+    BOOST_CHECK(jsonRpc.processAsync(cancelSubstractArray).get().empty());
     forever.unlock();
 
     waitForResult.join();
@@ -198,10 +200,10 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel_but_also_finished, Fixture)
 BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel_already_finished, Fixture)
 {
     using namespace std::placeholders;
-    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsync, _1, _2),
-                      cancelNOP);
+    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsync, _1, _2));
 
-    BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), substractResult);
+    BOOST_CHECK_EQUAL(jsonRpc.processAsync(substractArray).get(),
+                      substractResult);
 
-    BOOST_CHECK(jsonRpc.process(cancelSubstractArray).empty());
+    BOOST_CHECK(jsonRpc.processAsync(cancelSubstractArray).get().empty());
 }

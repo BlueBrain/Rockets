@@ -20,8 +20,8 @@
 #ifndef ROCKETS_JSONRPC_SERVER_H
 #define ROCKETS_JSONRPC_SERVER_H
 
+#include <rockets/jsonrpc/cancellableReceiver.h>
 #include <rockets/jsonrpc/notifier.h>
-#include <rockets/jsonrpc/receiver.h>
 #include <rockets/ws/types.h>
 
 namespace rockets
@@ -41,21 +41,24 @@ namespace jsonrpc
  *   Used to register a callback for processing the requests and notifications
  *   coming from the client(s).
  */
-template <typename ServerT, typename ReceiverT = Receiver>
-class Server : public Notifier, public ReceiverT
+template <typename ServerT>
+class Server : public Notifier, public CancellableReceiver
 {
 public:
     Server(ServerT& server)
-        : communicator{server}
+        : CancellableReceiver([&server](std::string json, uintptr_t client) {
+            server.sendText(json, client);
+        })
+        , communicator{server}
     {
         communicator.handleText(
             [this](ws::Request request, ws::ResponseCallback callback) {
-                ReceiverT::process(std::move(request), callback);
+                process(std::move(request), callback);
             });
     }
 
 private:
-    /** Emitter::_send */
+    /** Notifier::_send */
     void _send(std::string json) final
     {
         communicator.broadcastText(std::move(json));

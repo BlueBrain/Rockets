@@ -44,8 +44,6 @@
 #include "rockets/json.hpp"
 #include "rockets/jsonrpc/receiver.h"
 
-#include <thread>
-
 // Validation examples based on: http://www.jsonrpc.org/specification
 
 namespace
@@ -258,15 +256,6 @@ jsonrpc::Response substractArr(const jsonrpc::Request& request)
     return {std::to_string(value)};
 }
 
-void substractArrAsync(const jsonrpc::Request& request,
-                       jsonrpc::AsyncResponse callback)
-{
-    std::thread([request, callback]() {
-        usleep(500);
-        callback(substractArr(request));
-    }).detach();
-}
-
 struct Operands
 {
     int left = 0;
@@ -310,13 +299,6 @@ BOOST_FIXTURE_TEST_CASE(process_arr, Fixture)
     BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), substractResult);
 }
 
-BOOST_FIXTURE_TEST_CASE(process_arr_async, Fixture)
-{
-    using namespace std::placeholders;
-    jsonRpc.bindAsync("subtract", std::bind(&substractArrAsync, _1, _2));
-    BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), substractResult);
-}
-
 BOOST_FIXTURE_TEST_CASE(process_arr_with_string_id, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractArr, std::placeholders::_1));
@@ -330,7 +312,7 @@ BOOST_FIXTURE_TEST_CASE(process_notification, Fixture)
     // They must be processed without returning a response.
     bool called = false;
     jsonrpc::Response response{""};
-    jsonrpc::Receiver::ResponseCallback action =
+    jsonrpc::ResponseCallback action =
         [&called, &response](const jsonrpc::Request& request) {
             called = true;
             response = substractArr(request);
@@ -376,16 +358,6 @@ BOOST_FIXTURE_TEST_CASE(bind_with_params_and_retval_error, Fixture)
                       customSubstrationErrorResult);
 }
 
-BOOST_FIXTURE_TEST_CASE(bind_async_with_params, Fixture)
-{
-    jsonRpc.bindAsync<Operands>(
-        "subtract", [](const Operands op, jsonrpc::AsyncResponse callback) {
-            callback(jsonrpc::Response{std::to_string(op.left - op.right)});
-        });
-    BOOST_CHECK_EQUAL(jsonRpc.process(substractObject), substractResult);
-    BOOST_CHECK_EQUAL(jsonRpc.process(substractArray), invalidParamsResult);
-}
-
 BOOST_FIXTURE_TEST_CASE(connect_with_params, Fixture)
 {
     int called = 0;
@@ -402,11 +374,9 @@ BOOST_FIXTURE_TEST_CASE(reserved_method_names, Fixture)
 {
     using namespace std::placeholders;
     const auto bindFunc = std::bind(&substractObj, _1);
-    const auto bindAsyncFunc = std::bind(&substractArrAsync, _1, _2);
+    ;
 
     BOOST_CHECK_THROW(jsonRpc.bind("rpc.xyz", bindFunc), std::invalid_argument);
-    BOOST_CHECK_THROW(jsonRpc.bindAsync("rpc.abc", bindAsyncFunc),
-                      std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.connect("rpc.", [](const jsonrpc::Request&) {}),
                       std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.connect("rpc.void", [] {}),
@@ -478,7 +448,7 @@ BOOST_FIXTURE_TEST_CASE(process_array_notification, Fixture)
     // A batch of notification must be processed without returning a response.
     int called = 0;
     jsonrpc::Response response{""};
-    jsonrpc::Receiver::ResponseCallback action =
+    jsonrpc::ResponseCallback action =
         [&called, &response](const jsonrpc::Request& request) {
             ++called;
             response = substractArr(request);
@@ -500,7 +470,7 @@ BOOST_FIXTURE_TEST_CASE(process_array_mixed, Fixture)
         response = substractArr(request);
         return response;
     };
-    jsonRpc.bind("subtract", jsonrpc::Receiver::ResponseCallback(action));
+    jsonRpc.bind("subtract", jsonrpc::ResponseCallback(action));
     BOOST_CHECK_EQUAL(jsonRpc.process(substractBatchMixed),
                       substractBatchResult);
     BOOST_CHECK_EQUAL(called, 4);

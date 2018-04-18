@@ -1,5 +1,5 @@
 /* Copyright (c) 2017-2018, EPFL/Blue Brain Project
- *                          Daniel.Nachbaur@epfl.ch
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -18,154 +18,47 @@
  */
 
 #include "asyncReceiver.h"
-#include "requestProcessor.h"
+#include "asyncReceiverImpl.h"
 #include "utils.h"
 
 namespace rockets
 {
 namespace jsonrpc
 {
-namespace
+AsyncReceiver::AsyncReceiver()
+    : Receiver(new AsyncReceiverImpl)
 {
-const std::string cancelMethodName = "cancel";
-const char* reservedMethodError =
-    "Method names starting with 'cancel' are reserved by the async receiver.";
-const Response::Error requestAborted{"Request aborted",
-                                     ErrorCode::request_aborted};
 }
 
-class AsyncReceiver::Impl : public RequestProcessor
-{
-public:
-    bool _isValidMethodName(const std::string& method) const final
-    {
-        return _methods.find(method) != _methods.end() ||
-               method == cancelMethodName;
-    }
-
-    void _registerMethod(const std::string& method,
-                         DelayedResponseCallback action)
-    {
-        if (begins_with(method, cancelMethodName))
-            throw std::invalid_argument(reservedMethodError);
-        _methods[method] = action;
-    }
-
-    void _process(const json& requestID, const std::string& method,
-                  const Request& request, JsonResponseCallback respond) final
-    {
-        if (method == cancelMethodName)
-        {
-            processCancel(requestID, request);
-            respond(json());
-            return;
-        }
-
-        const auto& cancelFunc = cancels.find(method);
-        if (cancelFunc != cancels.end())
-        {
-            std::lock_guard<std::mutex> lock(pendingRequests->mutex);
-            pendingRequests->requests[requestID] = {cancelFunc->second,
-                                                    respond};
-        }
-
-        auto skipResponse = [
-            requestID, pendingRequests = cancelFunc != cancels.end()
-                                             ? pendingRequests
-                                             : nullptr
-        ]
-        {
-            if (pendingRequests)
-            {
-                std::lock_guard<std::mutex> lock(pendingRequests->mutex);
-
-                // if request has been cancelled and response is already sent,
-                // don't send another response
-                if (pendingRequests->requests.erase(requestID) == 0)
-                    return true;
-            }
-            return false;
-        };
-
-        const auto& func = _methods[method];
-        func(request, [respond, requestID, skipResponse](const Response rep) {
-            if (skipResponse())
-                return;
-
-            // No reply for valid "notifications" (requests without an "id")
-            if (requestID.is_null())
-                respond(json());
-            else
-                respond(makeResponse(rep, requestID));
-        });
-    }
-
-    void processCancel(const json& id, const Request& request)
-    {
-        auto params = json::parse(request.message, nullptr, false);
-
-        // need a valid notification with the ID of the request to cancel
-        const bool isNotification = id.is_null();
-        if (!isNotification || !params.count("id"))
-            return;
-
-        std::lock_guard<std::mutex> lock(pendingRequests->mutex);
-
-        // invalid request ID or request already processed
-        const auto requestID = params["id"];
-        auto& pendingRequest = pendingRequests->requests;
-        auto cancelFunc = pendingRequest.find(requestID);
-        if (cancelFunc == pendingRequest.end())
-            return;
-
-        // cancel callback to the application
-        cancelFunc->second.first();
-
-        // respond to request
-        cancelFunc->second.second(makeErrorResponse(requestAborted, requestID));
-
-        pendingRequest.erase(requestID);
-    }
-
-    std::map<std::string, CancelRequestCallback> cancels;
-
-private:
-    std::map<std::string, DelayedResponseCallback> _methods;
-
-    struct PendingRequests
-    {
-        std::mutex mutex;
-        std::map<json, std::pair<CancelRequestCallback, JsonResponseCallback>>
-            requests;
-    };
-
-    std::shared_ptr<PendingRequests> pendingRequests{
-        std::make_shared<PendingRequests>()};
-};
-
-AsyncReceiver::AsyncReceiver()
-    : _impl{new Impl}
+AsyncReceiver::AsyncReceiver(RequestProcessor* impl)
+    : Receiver(impl)
 {
 }
 
 void AsyncReceiver::bindAsync(const std::string& method,
-                              DelayedResponseCallback action,
-                              CancelRequestCallback cancel)
+                              DelayedResponseCallback action)
 {
-    ReceiverInterface::bindAsync(method, action);
-    _impl->cancels[method] = cancel;
+    std::static_pointer_cast<AsyncReceiverImpl>(_impl)->registerMethod(
+        method, [action](Request request, AsyncResponse response) {
+            action(request, response);
+        });
 }
 
-void AsyncReceiver::_process(const Request& request,
-                             AsyncStringResponse callback)
+std::future<std::string> AsyncReceiver::processAsync(const Request& request)
+{
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    auto callback = [promise](std::string response) {
+        promise->set_value(std::move(response));
+    };
+    process(request, callback);
+    return future;
+}
+
+void AsyncReceiver::process(const Request& request,
+                            AsyncStringResponse callback)
 {
     _impl->process(request, callback);
-}
-
-void AsyncReceiver::_registerMethod(const std::string& method,
-                                    DelayedResponseCallback action)
-{
-    _impl->_registerMethod(method, action);
 }
 }
 }

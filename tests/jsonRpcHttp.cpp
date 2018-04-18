@@ -45,9 +45,9 @@
 
 #include <rockets/helpers.h>
 #include <rockets/http/client.h>
+#include <rockets/jsonrpc/asyncReceiver.h>
 #include <rockets/jsonrpc/client.h>
 #include <rockets/jsonrpc/http.h>
-#include <rockets/jsonrpc/receiver.h>
 
 #include <iostream>
 
@@ -71,7 +71,7 @@ struct Fixture
 {
     Fixture() { jsonrpc::connect(httpServer, "test/endpoint", receiver); }
     Server httpServer;
-    jsonrpc::Receiver receiver;
+    jsonrpc::AsyncReceiver receiver;
 
     http::Client httpClient;
     jsonrpc::HttpCommunicator communicator{httpClient, httpServer.getURI() +

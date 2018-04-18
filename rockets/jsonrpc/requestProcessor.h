@@ -51,6 +51,9 @@ public:
      */
     void process(const Request& request, AsyncStringResponse callback);
 
+    /** Check if given method name is valid, throws otherwise. */
+    virtual void verifyValidMethodName(const std::string& method) const;
+
 protected:
     using json = rockets_nlohmann::json;
     using JsonResponseCallback = std::function<void(json)>;
@@ -65,15 +68,15 @@ private:
      * @param request 'params' field of the JSON-RPC request and the client ID
      * @param respond callback for responding JSON result of request processing
      */
-    virtual void _process(const json& requestID, const std::string& method,
-                          const Request& request,
-                          JsonResponseCallback respond) = 0;
+    virtual void process(const json& requestID, const std::string& method,
+                         const Request& request,
+                         JsonResponseCallback respond) = 0;
 
     /**
      * @return true if the given method name is valid to continue calling
      *         _process(), false otherwise
      */
-    virtual bool _isValidMethodName(const std::string&) const = 0;
+    virtual bool isRegisteredMethodName(const std::string&) const = 0;
 
     std::string _processBatchBlocking(const json& array, uintptr_t clientID);
 
