@@ -40,7 +40,7 @@ public:
     Receiver();
 
     /** Destructor. */
-    virtual ~Receiver() = default;
+    virtual ~Receiver();
 
     /**
      * Connect a method to a callback with no response and no payload.
@@ -185,8 +185,8 @@ public:
     std::string process(const Request& request);
 
 protected:
-    Receiver(RequestProcessor* impl);
-    std::shared_ptr<RequestProcessor> _impl;
+    Receiver(std::unique_ptr<RequestProcessor> impl);
+    std::unique_ptr<RequestProcessor> _impl;
 };
 }
 }

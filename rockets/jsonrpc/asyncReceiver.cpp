@@ -26,22 +26,23 @@ namespace rockets
 namespace jsonrpc
 {
 AsyncReceiver::AsyncReceiver()
-    : Receiver(new AsyncReceiverImpl)
+    : Receiver(std::make_unique<AsyncReceiverImpl>())
 {
 }
 
-AsyncReceiver::AsyncReceiver(RequestProcessor* impl)
-    : Receiver(impl)
+AsyncReceiver::AsyncReceiver(std::unique_ptr<RequestProcessor> impl)
+    : Receiver(std::move(impl))
 {
 }
 
 void AsyncReceiver::bindAsync(const std::string& method,
                               DelayedResponseCallback action)
 {
-    std::static_pointer_cast<AsyncReceiverImpl>(_impl)->registerMethod(
-        method, [action](Request request, AsyncResponse response) {
-            action(request, response);
-        });
+    static_cast<AsyncReceiverImpl*>(_impl.get())
+        ->registerMethod(method,
+                         [action](Request request, AsyncResponse response) {
+                             action(request, response);
+                         });
 }
 
 std::future<std::string> AsyncReceiver::processAsync(const Request& request)

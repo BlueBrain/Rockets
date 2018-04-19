@@ -41,13 +41,13 @@ namespace jsonrpc
  *   Used to register a callback for processing the requests and notifications
  *   coming from the client(s).
  */
-template <typename ServerT>
+template <typename CommunicatorT>
 class Server : public Notifier, public CancellableReceiver
 {
 public:
-    Server(ServerT& server)
+    Server(CommunicatorT& server)
         : CancellableReceiver([&server](std::string json, uintptr_t client) {
-            server.sendText(json, client);
+            server.sendText(std::move(json), client);
         })
         , communicator{server}
     {
@@ -64,7 +64,7 @@ private:
         communicator.broadcastText(std::move(json));
     }
 
-    ServerT& communicator;
+    CommunicatorT& communicator;
 };
 }
 }

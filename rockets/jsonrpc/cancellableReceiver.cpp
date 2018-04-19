@@ -27,18 +27,19 @@ namespace rockets
 namespace jsonrpc
 {
 CancellableReceiver::CancellableReceiver(SendTextCallback sendTextCb)
-    : AsyncReceiver{new CancellableReceiverImpl(sendTextCb)}
+    : AsyncReceiver{std::make_unique<CancellableReceiverImpl>(sendTextCb)}
 {
 }
 
 void CancellableReceiver::bindAsync(const std::string& method,
                                     CancellableResponseCallback action)
 {
-    std::static_pointer_cast<CancellableReceiverImpl>(_impl)->registerMethod(
-        method, [action](Request request, AsyncResponse response,
-                         ProgressUpdateCallback progress) {
-            return action(request, response, progress);
-        });
+    static_cast<CancellableReceiverImpl*>(_impl.get())
+        ->registerMethod(method,
+                         [action](Request request, AsyncResponse response,
+                                  ProgressUpdateCallback progress) {
+                             return action(request, response, progress);
+                         });
 }
 }
 }

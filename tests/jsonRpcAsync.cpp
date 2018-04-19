@@ -37,7 +37,7 @@
 /* or implied, of Ecole polytechnique federale de Lausanne.          */
 /*********************************************************************/
 
-#define BOOST_TEST_MODULE rockets_jsonrpcAsync
+#define BOOST_TEST_MODULE rockets_jsonrpc_async
 
 #include <boost/test/unit_test.hpp>
 
@@ -151,8 +151,7 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async, Fixture)
 BOOST_FIXTURE_TEST_CASE(bind_async_with_params, Fixture)
 {
     jsonRpcAsync.bindAsync<Operands>(
-        "subtract",
-        [](const Operands op, jsonrpc::AsyncResponse callback) {
+        "subtract", [](const Operands op, jsonrpc::AsyncResponse callback) {
             callback(jsonrpc::Response{std::to_string(op.left - op.right)});
         });
     BOOST_CHECK_EQUAL(jsonRpcAsync.processAsync(substractObject).get(),

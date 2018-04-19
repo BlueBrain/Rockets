@@ -29,7 +29,7 @@ namespace jsonrpc
 std::string _getCancelJson(size_t id)
 {
     json cancel{{"id", id}};
-    return cancel.dump();
+    return cancel.dump(4);
 }
 }
 }
