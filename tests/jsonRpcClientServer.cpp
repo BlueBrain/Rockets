@@ -252,4 +252,5 @@ BOOST_FIXTURE_TEST_CASE(client_cancel_request, Fixture)
     BOOST_REQUIRE(!request.is_ready());
     request.cancel();
     BOOST_CHECK(request.is_ready());
+    BOOST_CHECK_THROW(request.get(), std::runtime_error);
 }

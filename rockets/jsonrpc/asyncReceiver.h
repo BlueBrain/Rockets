@@ -89,7 +89,7 @@ public:
     void process(const Request& request, AsyncStringResponse callback);
 
 protected:
-    AsyncReceiver(RequestProcessor* impl);
+    AsyncReceiver(std::unique_ptr<RequestProcessor> impl);
 };
 }
 }

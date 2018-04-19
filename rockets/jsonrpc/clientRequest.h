@@ -35,31 +35,33 @@ std::string _getCancelJson(size_t id);
  * A request object containing the future result and a handle to the request
  * made by Requester to cancel the request, if supported by the receiver.
  */
-template <typename T>
-struct ClientRequest
+template <typename ResponseT>
+class ClientRequest
 {
-    using NotifyFunc = std::function<void(std::string, std::string)>;
-
-    /** @internal Construct request from within Requester. */
-    ClientRequest(const size_t id, std::future<T>&& future, NotifyFunc func)
-        : _id(id)
-        , _future(std::move(future))
-        , _notify(func)
-    {
-    }
-
+public:
     /** @return true if the result is ready and get() won't block. */
     bool is_ready() const { return rockets::is_ready(_future); }
     /** @return the result of the request, may wait if not ready yet. */
-    T get() { return _future.get(); }
+    ResponseT get() { return _future.get(); }
     /**
      * Issue a cancel of the request. Depending on the receiver type and the
      * internal cancel handling, is_ready() might change.
      */
     void cancel() { _notify("cancel", _getCancelJson(_id)); }
 private:
+    friend class Requester;
+
+    using NotifyFunc = std::function<void(std::string, std::string)>;
+    ClientRequest(const size_t id, std::future<ResponseT>&& future,
+                  NotifyFunc func)
+        : _id(id)
+        , _future(std::move(future))
+        , _notify(func)
+    {
+    }
+
     size_t _id;
-    std::future<T> _future;
+    std::future<ResponseT> _future;
     NotifyFunc _notify;
 };
 }

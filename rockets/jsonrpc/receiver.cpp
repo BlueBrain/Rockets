@@ -26,12 +26,16 @@ namespace rockets
 namespace jsonrpc
 {
 Receiver::Receiver()
-    : _impl{new ReceiverImpl}
+    : _impl{std::make_unique<ReceiverImpl>()}
 {
 }
 
-Receiver::Receiver(RequestProcessor* impl)
-    : _impl(impl)
+Receiver::~Receiver()
+{
+}
+
+Receiver::Receiver(std::unique_ptr<RequestProcessor> impl)
+    : _impl(std::move(impl))
 {
 }
 
@@ -53,15 +57,15 @@ void Receiver::connect(const std::string& method, NotifyCallback action)
 
 void Receiver::bind(const std::string& method, ResponseCallback action)
 {
-    std::static_pointer_cast<ReceiverImpl>(_impl)->registerMethod(method,
-                                                                  action);
+    static_cast<ReceiverImpl*>(_impl.get())->registerMethod(method, action);
 }
 
 std::string Receiver::process(const Request& request)
 {
     std::string result;
-    _impl->process(request,
-                   [&result](std::string result_) { result = result_; });
+    _impl->process(request, [&result](std::string result_) {
+        result = std::move(result_);
+    });
     return result;
 }
 }

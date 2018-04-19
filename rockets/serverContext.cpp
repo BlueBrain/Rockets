@@ -48,7 +48,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     fillContextInfo(uri, threadCount);
 
 #ifdef LWS_USE_LIBUV
-    auto uvLoop_ = reinterpret_cast<uv_loop_t*>(uvLoop);
+    auto uvLoop_ = static_cast<uv_loop_t*>(uvLoop);
     const bool uvLoopRunning = uvLoop && uv_loop_alive(uvLoop_) != 0;
     if (uvLoop && !uvLoopRunning)
         throw std::runtime_error(

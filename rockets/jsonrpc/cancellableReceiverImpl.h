@@ -116,7 +116,8 @@ public:
 
         auto progressFunc =
             [ requestID, clientID = request.clientID,
-              &sendText = _sendTextCb ](std::string msg, float amount)
+              &sendText = _sendTextCb ](const std::string& msg,
+                                        const float amount)
         {
             json progress{{"id", requestID},
                           {"amount", amount},

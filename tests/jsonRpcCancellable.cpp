@@ -37,7 +37,7 @@
 /* or implied, of Ecole polytechnique federale de Lausanne.          */
 /*********************************************************************/
 
-#define BOOST_TEST_MODULE rockets_jsonRpcCancellable
+#define BOOST_TEST_MODULE rockets_jsonrpc_cancellable
 
 #include <boost/test/unit_test.hpp>
 
@@ -48,6 +48,27 @@
 #include <thread>
 namespace
 {
+const std::string action{
+    R"({"jsonrpc": "2.0", "method": "action", "id": 4})"};
+
+const std::string actionResponse{
+    R"({
+    "id": 4,
+    "jsonrpc": "2.0",
+    "result": 42
+})"};
+
+const std::string progressMessage{
+    R"({
+    "jsonrpc": "2.0",
+    "method": "progress",
+    "params": {
+        "amount": 1.0,
+        "id": 4,
+        "operation": "update"
+    }
+})"};
+
 const std::string substractArray{
     R"({"jsonrpc": "2.0", "method": "subtract", "params": [42, 23], "id": 3})"};
 
@@ -100,6 +121,15 @@ jsonrpc::CancelRequestCallback substractArrAsync(
     return {};
 }
 
+jsonrpc::CancelRequestCallback actionProgress(
+    const jsonrpc::Request&, jsonrpc::AsyncResponse callback,
+    jsonrpc::ProgressUpdateCallback progress)
+{
+    progress("update", 1.f);
+    callback({std::to_string(42)});
+    return {};
+}
+
 std::mutex forever;
 
 jsonrpc::CancelRequestCallback substractArrAsyncForever(const jsonrpc::Request&,
@@ -123,8 +153,15 @@ void cancelNOP()
 
 struct Fixture
 {
-    jsonrpc::CancellableReceiver jsonRpc{[](std::string, uintptr_t) {}};
-};
+    std::string message;
+    jsonrpc::CancellableReceiver jsonRpc{[& message = message](std::string msg,
+                                                               uintptr_t){
+        message = std::move(msg);
+}
+}
+;
+}
+;
 
 BOOST_FIXTURE_TEST_CASE(invalid_bind, Fixture)
 {
@@ -133,6 +170,11 @@ BOOST_FIXTURE_TEST_CASE(invalid_bind, Fixture)
                                         std::bind(&substractArrAsync, _1, _2)),
                       std::invalid_argument);
     BOOST_CHECK_THROW(jsonRpc.bind("cancel", std::bind(&substractArr, _1)),
+                      std::invalid_argument);
+    BOOST_CHECK_THROW(jsonRpc.bindAsync("progress",
+                                        std::bind(&substractArrAsync, _1, _2)),
+                      std::invalid_argument);
+    BOOST_CHECK_THROW(jsonRpc.bind("progress", std::bind(&substractArr, _1)),
                       std::invalid_argument);
 }
 
@@ -206,4 +248,13 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel_already_finished, Fixture)
                       substractResult);
 
     BOOST_CHECK(jsonRpc.processAsync(cancelSubstractArray).get().empty());
+}
+
+BOOST_FIXTURE_TEST_CASE(process_arr_async_progress, Fixture)
+{
+    using namespace std::placeholders;
+    jsonRpc.bindAsync("action", std::bind(&actionProgress, _1, _2, _3));
+
+    BOOST_CHECK_EQUAL(jsonRpc.processAsync(action).get(), actionResponse);
+    BOOST_CHECK_EQUAL(message, progressMessage);
 }
