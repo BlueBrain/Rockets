@@ -26,6 +26,7 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/CMake/common/Common.cmake)
 endif()
 
 set(ROCKETS_DEB_DEPENDS libboost-test-dev libwebsockets-dev)
+set(ROCKETS_PORT_DEPENDS libwebsockets)
 
 include(Common)
 

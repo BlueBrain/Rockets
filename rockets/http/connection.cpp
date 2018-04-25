@@ -30,7 +30,7 @@ Connection::Connection(lws* wsi, const char* path)
     , request{channel.readMethod(), path, channel.readOrigin(),
               channel.readQueryParameters(), ""}
     , contentLength{channel.readContentLength()}
-    , corsHeaders{channel.readCorsRequestHeaders()}
+    , corsHeaders(channel.readCorsRequestHeaders())
 {
     request.body.reserve(contentLength);
 }
