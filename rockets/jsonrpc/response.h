@@ -56,7 +56,7 @@ struct Response
      * @param err The error that occured during the request.
      */
     Response(Error&& err)
-        : error{std::move(err)}
+        : error(std::move(err))
     {
     }
 
