@@ -25,9 +25,15 @@
 
 #include <string.h> // memset
 
+// was renamed in version 2.4
+// https://github.com/warmcat/libwebsockets/commit/fc995df
+#ifdef LWS_USE_LIBUV
+#  define LWS_WITH_LIBUV
+#endif
+
 namespace rockets
 {
-#ifdef LWS_USE_LIBUV
+#ifdef LWS_WITH_LIBUV
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
 void signal_cb(uv_signal_t*, int)
 {
@@ -47,7 +53,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 
     fillContextInfo(uri, threadCount);
 
-#ifdef LWS_USE_LIBUV
+#ifdef LWS_WITH_LIBUV
     auto uvLoop_ = static_cast<uv_loop_t*>(uvLoop);
     const bool uvLoopRunning = uvLoop && uv_loop_alive(uvLoop_) != 0;
     if (uvLoop && !uvLoopRunning)
@@ -64,7 +70,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     if (!context)
         throw std::runtime_error("libwebsocket init failed");
 
-#ifdef LWS_USE_LIBUV
+#ifdef LWS_WITH_LIBUV
     if (uvLoopRunning)
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
         lws_uv_initloop(context, uvLoop_, &signal_cb, 0);
