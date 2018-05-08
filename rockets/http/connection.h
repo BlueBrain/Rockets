@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -46,16 +46,19 @@ public:
     void appendBody(const char* in, const size_t len);
 
     bool isCorsPreflightRequest() const;
-    CorsResponseHeaders getCorsResponseHeaders() const;
 
     Request& getRequest() { return request; }
     const Request& getRequest() const { return request; }
     void delayResponse();
 
-    int write(const Response& response, const CorsResponseHeaders& cors);
+    int writeCorsPreflightResponse(const CorsResponseHeaders& cors);
+    int writeResponseHeaders();
+    int writeResponseBody();
 
     bool delayedResponseSet = false;
+    bool responseHeadersSent = false;
     std::future<Response> delayedResponse;
+    Response response;
 
 private:
     Channel channel;
@@ -65,6 +68,7 @@ private:
 
     bool _canHaveHttpBody(Method m) const;
     bool _hasCorsPreflightHeaders() const;
+    CorsResponseHeaders _getCorsResponseHeaders() const;
 };
 }
 }

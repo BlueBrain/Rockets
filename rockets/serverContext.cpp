@@ -28,7 +28,7 @@
 // was renamed in version 2.4
 // https://github.com/warmcat/libwebsockets/commit/fc995df
 #ifdef LWS_USE_LIBUV
-#  define LWS_WITH_LIBUV
+#define LWS_WITH_LIBUV
 #endif
 
 namespace rockets
@@ -69,6 +69,12 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     context = lws_create_context(&info);
     if (!context)
         throw std::runtime_error("libwebsocket init failed");
+
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+    // create vhost explicitly to retrieve port number which is no longer filled
+    auto default_vhost = lws_create_vhost(context, &info);
+    info.port = lws_get_vhost_listen_port(default_vhost);
+#endif
 
 #ifdef LWS_WITH_LIBUV
     if (uvLoopRunning)
@@ -148,6 +154,9 @@ void ServerContext::fillContextInfo(const std::string& uri,
     info.ssl_private_key_filepath = nullptr;
     info.gid = -1;
     info.uid = -1;
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+    info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
+#endif
     // header size: accommodate long "Authorization: Negotiate <kerberos token>"
     info.max_http_header_data = 8192;
     // service threads

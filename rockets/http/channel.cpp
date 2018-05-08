@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -134,8 +134,8 @@ void Channel::requestCallback()
     lws_callback_on_writable(wsi);
 }
 
-int Channel::write(const Response& response,
-                   const CorsResponseHeaders& corsHeaders)
+int Channel::writeResponseHeaders(const CorsResponseHeaders& corsHeaders,
+                                  const Response& response)
 {
     unsigned char buffer[HEADERS_BUFFER_SIZE];
     unsigned char* const start = buffer + LWS_PRE;
@@ -173,9 +173,25 @@ int Channel::write(const Response& response,
     if (lws_finalize_http_header(wsi, &p, end))
         return 1;
 
-    lws_write(wsi, start, p - start, LWS_WRITE_HTTP_HEADERS);
+    const int n = lws_write(wsi, start, p - start, LWS_WRITE_HTTP_HEADERS);
+    if (n < 0)
+        return -1;
 
-    _write(response.body, LWS_WRITE_HTTP_FINAL);
+    if (response.body.size() > 0)
+    {
+        // Only one lws_write() allowed, book another callback for sending body
+        requestCallback();
+        return 0;
+    }
+
+    // Close and free connection if complete, else keep open
+    return lws_http_transaction_completed(wsi) ? -1 : 0;
+}
+
+int Channel::writeResponseBody(const Response& response)
+{
+    if (!_write(response.body, LWS_WRITE_HTTP_FINAL))
+        return -1;
 
     // Close and free connection if complete, else keep open
     return lws_http_transaction_completed(wsi) ? -1 : 0;
@@ -184,7 +200,7 @@ int Channel::write(const Response& response,
 #if LWS_LIBRARY_VERSION_NUMBER >= 2001000
 int Channel::writeRequestBody(const std::string& body)
 {
-    if (!_write(body, LWS_WRITE_HTTP))
+    if (!_write(body, LWS_WRITE_HTTP_FINAL))
         return -1;
 
     // Tell libwebsockets that we have finished sending the headers + body

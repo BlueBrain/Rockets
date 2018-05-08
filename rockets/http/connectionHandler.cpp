@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -84,7 +84,9 @@ int ConnectionHandler::respondToRequest(Connection& connection) const
         connection.delayedResponseSet = true;
     }
 
-    Response response;
+    if (connection.responseHeadersSent)
+        return connection.writeResponseBody();
+
     try
     {
         if (!is_ready(connection.delayedResponse))
@@ -92,13 +94,13 @@ int ConnectionHandler::respondToRequest(Connection& connection) const
             connection.delayResponse();
             return codeContinue;
         }
-        response = connection.delayedResponse.get();
+        connection.response = connection.delayedResponse.get();
     }
     catch (const std::future_error&)
     {
-        response = Response{Code::INTERNAL_SERVER_ERROR};
+        connection.response = Response{Code::INTERNAL_SERVER_ERROR};
     }
-    return connection.write(response, connection.getCorsResponseHeaders());
+    return connection.writeResponseHeaders();
 }
 
 std::future<Response> ConnectionHandler::_generateResponse(
@@ -154,7 +156,7 @@ int ConnectionHandler::_replyToCorsPreflightRequest(
 
     const auto path = connection.getPathWithoutLeadingSlash();
     const auto corsHeaders = _makeCorsPreflighResponseHeaders(path);
-    return connection.write(Response{Code::OK}, corsHeaders);
+    return connection.writeCorsPreflightResponse(corsHeaders);
 }
 
 CorsResponseHeaders ConnectionHandler::_makeCorsPreflighResponseHeaders(
