@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -61,21 +61,35 @@ bool Connection::isCorsPreflightRequest() const
     return getMethod() == Method::OPTIONS && _hasCorsPreflightHeaders();
 }
 
-CorsResponseHeaders Connection::getCorsResponseHeaders() const
-{
-    if (corsHeaders.origin.empty())
-        return CorsResponseHeaders();
-    return {{CorsResponseHeader::access_control_allow_origin, "*"}};
-}
-
 void Connection::delayResponse()
 {
     channel.requestCallback();
 }
 
-int Connection::write(const Response& response, const CorsResponseHeaders& cors)
+int Connection::writeCorsPreflightResponse(const CorsResponseHeaders& cors)
 {
-    return channel.write(response, cors);
+    if (responseHeadersSent)
+        throw std::logic_error("response headers were already sent!");
+
+    responseHeadersSent = true;
+    return channel.writeResponseHeaders(cors, Response{Code::OK});
+}
+
+int Connection::writeResponseHeaders()
+{
+    if (responseHeadersSent)
+        throw std::logic_error("response headers were already sent!");
+
+    responseHeadersSent = true;
+    return channel.writeResponseHeaders(_getCorsResponseHeaders(), response);
+}
+
+int Connection::writeResponseBody()
+{
+    if (!responseHeadersSent)
+        throw std::logic_error("response headers were not sent!");
+
+    return channel.writeResponseBody(response);
 }
 
 bool Connection::_canHaveHttpBody(const Method m) const
@@ -89,6 +103,13 @@ bool Connection::_hasCorsPreflightHeaders() const
            // requires parsing Access-Control-Request-Method in libwebsockets:
            // corsHeaders.accessControlRequestMethod != Method::ALL &&
            !corsHeaders.origin.empty();
+}
+
+CorsResponseHeaders Connection::_getCorsResponseHeaders() const
+{
+    if (corsHeaders.origin.empty())
+        return CorsResponseHeaders();
+    return {{CorsResponseHeader::access_control_allow_origin, "*"}};
 }
 }
 }
