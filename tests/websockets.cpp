@@ -58,6 +58,11 @@ BOOST_AUTO_TEST_CASE(server_construction)
     BOOST_CHECK_EQUAL(server1.getThreadCount(), 0);
 }
 
+BOOST_AUTO_TEST_CASE(listening_on_unavailable_port_throws)
+{
+    BOOST_CHECK_THROW(Server(":80", wsProtocol), std::runtime_error);
+}
+
 BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_server)
 {
     ws::Client client;

@@ -21,6 +21,7 @@
 #include "serverContext.h"
 
 #include "http/connection.h"
+#include "unavailablePortError.h"
 #include "ws/connection.h"
 
 #include <string.h> // memset
@@ -72,8 +73,15 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 
 #if LWS_LIBRARY_VERSION_NUMBER >= 3000000
     // create vhost explicitly to retrieve port number which is no longer filled
-    auto default_vhost = lws_create_vhost(context, &info);
-    info.port = lws_get_vhost_listen_port(default_vhost);
+    try
+    {
+        auto default_vhost = lws_create_vhost(context, &info);
+        info.port = lws_get_vhost_listen_port(default_vhost);
+    }
+    catch (const unavailable_port_error&)
+    {
+        std::rethrow_exception(std::current_exception());
+    }
 #endif
 
 #ifdef LWS_WITH_LIBUV
