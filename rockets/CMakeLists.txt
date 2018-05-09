@@ -64,6 +64,7 @@ set(ROCKETS_HEADERS
   proxyConnectionError.h
   serverContext.h
   serviceThreadPool.h
+  unavailablePortError.h
   utils.h
   http/channel.h
   http/connection.h

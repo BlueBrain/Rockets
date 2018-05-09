@@ -227,12 +227,17 @@ struct Fixture2 : public FixtureBase
 };
 using Fixtures = boost::mpl::vector<Fixture0, Fixture1, Fixture2>;
 
-BOOST_AUTO_TEST_CASE(construction)
+BOOST_AUTO_TEST_CASE(listening_on_os_chosen_port)
 {
     Server server1;
     BOOST_CHECK_NE(server1.getURI(), "");
     BOOST_CHECK_NE(server1.getPort(), 0);
     BOOST_CHECK_EQUAL(server1.getThreadCount(), 0);
+}
+
+BOOST_AUTO_TEST_CASE(listening_on_unavailable_port_throws)
+{
+    BOOST_CHECK_THROW(Server(":80", ""), std::runtime_error);
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(registration, F, Fixtures, F)

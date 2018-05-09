@@ -18,6 +18,7 @@
  */
 
 #include "proxyConnectionError.h"
+#include "unavailablePortError.h"
 
 #include <libwebsockets.h>
 
@@ -29,12 +30,22 @@ namespace rockets
 namespace
 {
 const std::string proxyError = "ERROR proxy: HTTP/1.1 503 \n";
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+const char unavailablePortError[] = "ERROR on binding fd ";
+#endif
 
 void handleErrorMessage(int, const char* message)
 {
 #if PROXY_CONNECTION_ERROR_THROWS
     if (message == proxyError)
         throw proxy_connection_error(message);
+#endif
+
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+    // Occurs during lws_create_vhost() if the chosen port is unavailable.
+    // The returned vhost is valid(!) so the error can only be caught here.
+    if (strncmp(message, unavailablePortError, sizeof(unavailablePortError)))
+        throw unavailable_port_error(message);
 #endif
 
 #ifdef NDEBUG
