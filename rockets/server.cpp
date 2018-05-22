@@ -77,8 +77,8 @@ public:
     void openWsConnection(lws* wsi)
     {
         std::lock_guard<std::mutex> lock{wsConnectionsMutex};
-        wsConnections.emplace(wsi, ws::Connection{
-                                       std::make_unique<ws::Channel>(wsi)});
+        wsConnections.emplace(wsi, std::make_shared<ws::Connection>(
+                                       std::make_unique<ws::Channel>(wsi)));
     }
 
     void closeWsConnection(lws* wsi)
@@ -92,7 +92,7 @@ public:
     std::map<lws*, http::Connection> connections;
 
     std::mutex wsConnectionsMutex;
-    std::map<lws*, ws::Connection> wsConnections;
+    std::map<lws*, ws::ConnectionPtr> wsConnections;
     ws::MessageHandler wsHandler;
 
     PollDescriptors pollDescriptors;
@@ -187,7 +187,7 @@ void Server::broadcastText(const std::string& message)
 {
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
     for (auto& connection : _impl->wsConnections)
-        connection.second.enqueueText(message);
+        connection.second->enqueueText(message);
     _impl->requestBroadcast();
 }
 
@@ -197,9 +197,10 @@ void Server::broadcastText(const std::string& message,
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
     for (auto& connection : _impl->wsConnections)
     {
-        auto i = filter.find(reinterpret_cast<uintptr_t>(&connection.second));
+        auto i =
+            filter.find(reinterpret_cast<uintptr_t>(connection.second.get()));
         if (i == filter.end())
-            connection.second.enqueueText(message);
+            connection.second->enqueueText(message);
     }
     _impl->requestBroadcast();
 }
@@ -209,8 +210,8 @@ void Server::sendText(const std::string& message, uintptr_t client)
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
     for (auto& connection : _impl->wsConnections)
     {
-        if (client == reinterpret_cast<uintptr_t>(&connection.second))
-            connection.second.enqueueText(message);
+        if (client == reinterpret_cast<uintptr_t>(connection.second.get()))
+            connection.second->enqueueText(message);
     }
     _impl->requestBroadcast();
 }
@@ -219,7 +220,7 @@ void Server::broadcastBinary(const char* data, const size_t size)
 {
     std::lock_guard<std::mutex> lock{_impl->wsConnectionsMutex};
     for (auto& connection : _impl->wsConnections)
-        connection.second.enqueueBinary({data, size});
+        connection.second->enqueueBinary({data, size});
     _impl->requestBroadcast();
 }
 
@@ -318,7 +319,7 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
                                           (const char*)in, len);
             break;
         case LWS_CALLBACK_SERVER_WRITEABLE:
-            impl->wsConnections.at(wsi).writeMessages();
+            impl->wsConnections.at(wsi)->writeMessages();
             break;
         default:
             break;

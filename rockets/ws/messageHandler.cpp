@@ -28,21 +28,21 @@ namespace rockets
 {
 namespace ws
 {
-void MessageHandler::handleMessage(Connection& connection, const char* data,
+void MessageHandler::handleMessage(ConnectionPtr connection, const char* data,
                                    const size_t len)
 {
     // compose potentially fragmented message
-    if (connection.getChannel().currentMessageHasMore() && _buffer.empty())
+    if (connection->getChannel().currentMessageHasMore() && _buffer.empty())
     {
         _buffer.reserve(
-            len + connection.getChannel().getCurrentMessageRemainingSize());
+            len + connection->getChannel().getCurrentMessageRemainingSize());
     }
     _buffer.append(data, len);
-    if (connection.getChannel().currentMessageHasMore())
+    if (connection->getChannel().currentMessageHasMore())
         return;
 
-    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
-    const Format format = connection.getChannel().getCurrentMessageFormat();
+    const auto clientID = reinterpret_cast<uintptr_t>(connection.get());
+    const Format format = connection->getChannel().getCurrentMessageFormat();
     Response response;
     if (format == Format::text)
     {
@@ -51,9 +51,11 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
         else if (callbackTextAsync)
         {
             callbackTextAsync({std::move(_buffer), clientID},
-                              [&connection](std::string reply) {
-                                  if (!reply.empty())
-                                      connection.sendText(std::move(reply));
+                              [weak = std::weak_ptr<Connection>(connection)](
+                                  const auto& reply) {
+                                  auto conn = weak.lock();
+                                  if (conn && !reply.empty())
+                                      conn->sendText(std::move(reply));
                               });
             return;
         }
@@ -68,41 +70,42 @@ void MessageHandler::handleMessage(Connection& connection, const char* data,
     _sendResponse(response, connection);
 }
 
-void MessageHandler::handleOpenConnection(Connection& connection)
+void MessageHandler::handleOpenConnection(ConnectionPtr connection)
 {
-    _connections.push_back(&connection);
+    _connections.push_back(connection);
     if (!callbackOpen)
         return;
 
-    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
+    const auto clientID = reinterpret_cast<uintptr_t>(connection.get());
     auto responses = callbackOpen(clientID);
     for (auto& response : responses)
         _sendResponse(response, connection);
 }
 
-void MessageHandler::handleCloseConnection(Connection& connection)
+void MessageHandler::handleCloseConnection(ConnectionPtr connection)
 {
     auto end = std::remove_if(_connections.begin(), _connections.end(),
-                              [&connection](Connection* conn) {
-                                  return conn == &connection;
+                              [&connection](auto conn) {
+                                  return conn.lock() == connection;
                               });
     _connections.erase(end, _connections.end());
 
     if (!callbackClose)
         return;
 
-    const auto clientID = reinterpret_cast<uintptr_t>(&connection);
+    const auto clientID = reinterpret_cast<uintptr_t>(connection.get());
     auto responses = callbackClose(clientID);
     for (auto& response : responses)
         _sendResponse(response, connection);
 }
 
-void MessageHandler::_sendResponse(const Response& response, Connection& sender)
+void MessageHandler::_sendResponse(const Response& response,
+                                   ConnectionPtr sender)
 {
     if (response.message.empty())
         return;
 
-    std::vector<Connection*> connections;
+    std::vector<std::weak_ptr<Connection>> connections;
     switch (response.recipient)
     {
     case Recipient::all:
@@ -112,15 +115,15 @@ void MessageHandler::_sendResponse(const Response& response, Connection& sender)
     {
         connections = _connections;
         auto end = std::remove_if(connections.begin(), connections.end(),
-                                  [&sender](Connection* conn) {
-                                      return conn == &sender;
+                                  [&sender](auto conn) {
+                                      return conn.lock() == sender;
                                   });
         connections.erase(end, connections.end());
         break;
     }
     case Recipient::sender:
     default:
-        connections.push_back(&sender);
+        connections.push_back(sender);
     }
 
     for (auto connection : connections)
@@ -130,11 +133,13 @@ void MessageHandler::_sendResponse(const Response& response, Connection& sender)
         case Format::unspecified:
             break;
         case Format::binary:
-            connection->sendBinary(std::move(response.message));
+            if (auto conn = connection.lock())
+                conn->sendBinary(std::move(response.message));
             break;
         case Format::text:
         default:
-            connection->sendText(std::move(response.message));
+            if (auto conn = connection.lock())
+                conn->sendText(std::move(response.message));
         }
     }
 }

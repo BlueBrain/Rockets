@@ -137,6 +137,53 @@ BOOST_AUTO_TEST_CASE(server_constructor)
     jsonrpc::Server<Server> server{wsServer};
 }
 
+BOOST_AUTO_TEST_CASE(close_client_while_request_pending)
+{
+    Server wsServer("", "test");
+    jsonrpc::Server<Server> server{wsServer};
+
+    auto wsClient = std::make_unique<ws::Client>();
+    auto client = std::make_unique<jsonrpc::Client<ws::Client>>(*wsClient);
+
+    auto connectFuture = wsClient->connect(wsServer.getURI(), "test");
+    while (!is_ready(connectFuture))
+    {
+        wsClient->process(5);
+        wsServer.process(5);
+    }
+    connectFuture.get();
+
+    std::mutex forever;
+    bool responseSent{false};
+    server.bindAsync("forever",
+                     [&forever,
+                      &responseSent](const jsonrpc::Request&,
+                                     jsonrpc::AsyncResponse response,
+                                     jsonrpc::ProgressUpdateCallback) {
+                         std::thread([&forever, &responseSent, response] {
+                             forever.lock();
+                             response({"false"});
+                             responseSent = true;
+                         }).detach();
+                         return jsonrpc::CancelRequestCallback();
+                     });
+    auto request = client->request<bool>("forever");
+    BOOST_REQUIRE(!request.is_ready());
+
+    wsClient->process(5);
+    wsServer.process(5);
+
+    client.reset();
+    wsClient.reset();
+
+    forever.unlock();
+    while (!responseSent)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    BOOST_CHECK(request.is_ready());
+    BOOST_CHECK_THROW(request.get(), std::runtime_error);
+}
+
 struct Fixture
 {
     MockServerCommunicator serverCommunicator;
