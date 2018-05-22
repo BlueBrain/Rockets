@@ -37,14 +37,14 @@ public:
      *
      * @param connection the connection to use for reply.
      */
-    void handleOpenConnection(Connection& connection);
+    void handleOpenConnection(ConnectionPtr connection);
 
     /**
      * Handle close of a connection.
      *
      * @param connection the connection to use for reply.
      */
-    void handleCloseConnection(Connection& connection);
+    void handleCloseConnection(ConnectionPtr connection);
 
     /**
      * Handle an incomming message for the given connection.
@@ -53,7 +53,7 @@ public:
      * @param data the incoming data pointer.
      * @param len the length of the data.
      */
-    void handleMessage(Connection& connection, const char* data, size_t len);
+    void handleMessage(ConnectionPtr connection, const char* data, size_t len);
 
     /** The callback for incoming connections. */
     ConnectionCallback callbackOpen;
@@ -71,9 +71,9 @@ public:
     MessageCallback callbackBinary;
 
 private:
-    void _sendResponse(const Response& response, Connection& connection);
+    void _sendResponse(const Response& response, ConnectionPtr connection);
 
-    std::vector<Connection*> _connections;
+    std::vector<std::weak_ptr<Connection>> _connections;
     std::string _buffer;
 };
 }

@@ -21,6 +21,7 @@
 #define ROCKETS_WS_TYPES_H
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,7 @@ namespace rockets
 namespace ws
 {
 class Connection;
+using ConnectionPtr = std::shared_ptr<Connection>;
 
 /**
  * The possible websocket message formats.
