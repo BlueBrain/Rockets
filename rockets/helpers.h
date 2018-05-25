@@ -28,7 +28,8 @@ namespace rockets
 template <typename T>
 bool is_ready(const std::future<T>& f)
 {
-    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+    return f.valid() &&
+           f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 }
 

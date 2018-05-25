@@ -19,7 +19,20 @@
 
 #include "connection.h"
 
+#include "../helpers.h"
 #include "utils.h"
+
+namespace
+{
+const std::logic_error response_already_set_error{"response was already set!"};
+const std::logic_error headers_already_sent_error{
+    "response headers were already sent!"};
+const std::logic_error headers_not_sent_error{
+    "response headers have not been sent yet!"};
+const std::logic_error body_already_sent_error{
+    "response body has already been sent!"};
+const std::logic_error body_empty_error{"response body is empty!"};
+}
 
 namespace rockets
 {
@@ -31,6 +44,7 @@ Connection::Connection(lws* wsi, const char* path)
               channel.readQueryParameters(), ""}
     , contentLength{channel.readContentLength()}
     , corsHeaders(channel.readCorsRequestHeaders())
+    , corsResponseHeaders(_getCorsResponseHeaders())
 {
     request.body.reserve(contentLength);
 }
@@ -61,35 +75,74 @@ bool Connection::isCorsPreflightRequest() const
     return getMethod() == Method::OPTIONS && _hasCorsPreflightHeaders();
 }
 
-void Connection::delayResponse()
+void Connection::overwriteRequestPath(std::string path)
 {
-    channel.requestCallback();
+    request.path = std::move(path);
 }
 
-int Connection::writeCorsPreflightResponse(const CorsResponseHeaders& cors)
+void Connection::setResponse(std::future<Response>&& futureResponse)
 {
-    if (responseHeadersSent)
-        throw std::logic_error("response headers were already sent!");
+    if (isResponseSet())
+        throw response_already_set_error;
 
-    responseHeadersSent = true;
-    return channel.writeResponseHeaders(cors, Response{Code::OK});
+    delayedResponse = std::move(futureResponse);
+    delayedResponseSet = true;
+}
+
+void Connection::setCorsResponseHeaders(CorsResponseHeaders&& headers)
+{
+    if (isResponseSet())
+        throw response_already_set_error;
+
+    corsResponseHeaders = std::move(headers);
+    responseFinalized = true;
+}
+
+bool Connection::isResponseSet() const
+{
+    return delayedResponseSet || responseFinalized;
+}
+
+bool Connection::isResponseReady() const
+{
+    return responseFinalized || is_ready(delayedResponse);
+}
+
+void Connection::requestWriteCallback()
+{
+    channel.requestCallback();
 }
 
 int Connection::writeResponseHeaders()
 {
     if (responseHeadersSent)
-        throw std::logic_error("response headers were already sent!");
+        throw headers_already_sent_error;
+    if (responseBodySent)
+        throw body_already_sent_error;
+
+    if (!responseFinalized)
+        _finalizeResponse();
 
     responseHeadersSent = true;
-    return channel.writeResponseHeaders(_getCorsResponseHeaders(), response);
+    return channel.writeResponseHeaders(corsResponseHeaders, response);
 }
 
 int Connection::writeResponseBody()
 {
     if (!responseHeadersSent)
-        throw std::logic_error("response headers were not sent!");
+        throw headers_not_sent_error;
+    if (responseBodySent)
+        throw body_already_sent_error;
+    if (response.body.empty())
+        throw body_empty_error;
 
+    responseBodySent = true;
     return channel.writeResponseBody(response);
+}
+
+bool Connection::wereResponseHeadersSent() const
+{
+    return responseHeadersSent;
 }
 
 bool Connection::_canHaveHttpBody(const Method m) const
@@ -110,6 +163,19 @@ CorsResponseHeaders Connection::_getCorsResponseHeaders() const
     if (corsHeaders.origin.empty())
         return CorsResponseHeaders();
     return {{CorsResponseHeader::access_control_allow_origin, "*"}};
+}
+
+void Connection::_finalizeResponse()
+{
+    try
+    {
+        response = delayedResponse.get();
+    }
+    catch (const std::future_error&)
+    {
+        response = Response{Code::INTERNAL_SERVER_ERROR};
+    }
+    responseFinalized = true;
 }
 }
 }

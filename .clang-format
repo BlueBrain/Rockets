@@ -20,8 +20,9 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
-DerivePointerBinding: true
+DerivePointerBinding: false
 ExperimentalAutoDetectBinPacking: false
+#FixNamespaceComments: false # uncomment since clang-format 5.0
 IndentCaseLabels: false
 IndentFunctionDeclarationAfterType: true
 IndentWidth:     4

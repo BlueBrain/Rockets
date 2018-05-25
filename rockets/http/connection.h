@@ -39,6 +39,8 @@ class Connection
 public:
     Connection(lws* wsi, const char* path);
 
+    // request
+
     std::string getPathWithoutLeadingSlash() const;
     Method getMethod() const;
 
@@ -47,18 +49,23 @@ public:
 
     bool isCorsPreflightRequest() const;
 
-    Request& getRequest() { return request; }
     const Request& getRequest() const { return request; }
-    void delayResponse();
+    void overwriteRequestPath(std::string path);
 
-    int writeCorsPreflightResponse(const CorsResponseHeaders& cors);
+    // response
+
+    void setResponse(std::future<Response>&& futureResponse);
+    void setCorsResponseHeaders(CorsResponseHeaders&& headers);
+
+    bool isResponseSet() const;
+    bool isResponseReady() const;
+
+    void requestWriteCallback();
+
     int writeResponseHeaders();
     int writeResponseBody();
 
-    bool delayedResponseSet = false;
-    bool responseHeadersSent = false;
-    std::future<Response> delayedResponse;
-    Response response;
+    bool wereResponseHeadersSent() const;
 
 private:
     Channel channel;
@@ -66,9 +73,19 @@ private:
     size_t contentLength = 0;
     CorsRequestHeaders corsHeaders;
 
+    CorsResponseHeaders corsResponseHeaders;
+    std::future<Response> delayedResponse;
+    bool delayedResponseSet = false;
+    bool responseFinalized = false;
+    Response response;
+
+    bool responseHeadersSent = false;
+    bool responseBodySent = false;
+
     bool _canHaveHttpBody(Method m) const;
     bool _hasCorsPreflightHeaders() const;
     CorsResponseHeaders _getCorsResponseHeaders() const;
+    void _finalizeResponse();
 };
 }
 }

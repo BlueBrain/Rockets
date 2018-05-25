@@ -19,7 +19,6 @@
 
 #include "connectionHandler.h"
 
-#include "../helpers.h"
 #include "helpers.h"
 #include "request.h"
 #include "response.h"
@@ -58,55 +57,48 @@ void ConnectionHandler::setFilter(const Filter* filter)
     _filter = filter;
 }
 
-int ConnectionHandler::handleNewRequest(Connection& connection) const
+void ConnectionHandler::handleNewRequest(Connection& connection) const
 {
     if (connection.isCorsPreflightRequest())
-        return _replyToCorsPreflightRequest(connection);
-
-    if (connection.canHaveHttpBody())
-        return codeContinue;
-
-    return respondToRequest(connection);
+        _prepareCorsPreflightResponse(connection);
+    else if (!connection.canHaveHttpBody())
+        prepareResponse(connection);
 }
 
-int ConnectionHandler::handleData(Connection& connection, const char* data,
-                                  const size_t size) const
+void ConnectionHandler::handleData(Connection& connection, const char* data,
+                                   const size_t size) const
 {
     connection.appendBody(data, size);
-    return codeContinue;
 }
 
-int ConnectionHandler::respondToRequest(Connection& connection) const
+void ConnectionHandler::prepareResponse(Connection& connection) const
 {
-    if (!connection.delayedResponseSet)
+    connection.setResponse(_generateResponse(connection));
+    connection.requestWriteCallback();
+}
+
+int ConnectionHandler::writeResponse(Connection& connection) const
+{
+    if (!connection.isResponseSet())
+        throw std::logic_error("Response has not been prepared yet!");
+
+    if (!connection.isResponseReady())
     {
-        connection.delayedResponse = _generateResponse(connection);
-        connection.delayedResponseSet = true;
+        // Keep polling until response is ready
+        connection.requestWriteCallback();
+        return codeContinue;
     }
 
-    if (connection.responseHeadersSent)
-        return connection.writeResponseBody();
+    if (!connection.wereResponseHeadersSent())
+        return connection.writeResponseHeaders();
 
-    try
-    {
-        if (!is_ready(connection.delayedResponse))
-        {
-            connection.delayResponse();
-            return codeContinue;
-        }
-        connection.response = connection.delayedResponse.get();
-    }
-    catch (const std::future_error&)
-    {
-        connection.response = Response{Code::INTERNAL_SERVER_ERROR};
-    }
-    return connection.writeResponseHeaders();
+    return connection.writeResponseBody();
 }
 
 std::future<Response> ConnectionHandler::_generateResponse(
     Connection& connection) const
 {
-    auto& request = connection.getRequest();
+    const auto& request = connection.getRequest();
     if (_filter && _filter->filter(request))
         return make_ready_response(_filter->getResponse(request));
 
@@ -122,7 +114,7 @@ std::future<Response> ConnectionHandler::_generateResponse(
         const auto pathStripped = _removeEndpointFromPath(endpoint, path);
         if (pathStripped.empty() || *endpoint.rbegin() == '/')
         {
-            request.path = pathStripped;
+            connection.overwriteRequestPath(pathStripped);
             return _callHandler(connection, endpoint);
         }
     }
@@ -142,11 +134,11 @@ std::future<Response> ConnectionHandler::_generateResponse(
 std::future<Response> ConnectionHandler::_callHandler(
     const Connection& connection, const std::string& endpoint) const
 {
-    auto func = _registry.getFunction(connection.getMethod(), endpoint);
+    const auto& func = _registry.getFunction(connection.getMethod(), endpoint);
     return func(connection.getRequest());
 }
 
-int ConnectionHandler::_replyToCorsPreflightRequest(
+void ConnectionHandler::_prepareCorsPreflightResponse(
     Connection& connection) const
 {
     // In a typical situation, user agents discover via a preflight request
@@ -155,8 +147,7 @@ int ConnectionHandler::_replyToCorsPreflightRequest(
     // More information can be found here: https://www.w3.org/TR/cors
 
     const auto path = connection.getPathWithoutLeadingSlash();
-    const auto corsHeaders = _makeCorsPreflighResponseHeaders(path);
-    return connection.writeCorsPreflightResponse(corsHeaders);
+    connection.setCorsResponseHeaders(_makeCorsPreflighResponseHeaders(path));
 }
 
 CorsResponseHeaders ConnectionHandler::_makeCorsPreflighResponseHeaders(

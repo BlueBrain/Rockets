@@ -1,8 +1,8 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
- *                     Stefan.Eilemann@epfl.ch
- *                     Daniel.Nachbaur@epfl.ch
- *                     Pawel.Podhajski@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
+ *                          Stefan.Eilemann@epfl.ch
+ *                          Daniel.Nachbaur@epfl.ch
+ *                          Pawel.Podhajski@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -255,29 +255,29 @@ static int callback_http(lws* wsi, const lws_callback_reasons reason,
     {
         auto impl = static_cast<Server::Impl*>(protocol->user);
         const auto& handler = impl->handler;
+        auto& connections = impl->connections;
 
         switch (reason)
         {
         case LWS_CALLBACK_HTTP:
-            impl->connections.emplace(wsi,
-                                      http::Connection{wsi, (const char*)in});
-            return handler.handleNewRequest(impl->connections.at(wsi));
+            connections.emplace(wsi, http::Connection{wsi, (const char*)in});
+            handler.handleNewRequest(connections.at(wsi));
+            break;
         case LWS_CALLBACK_HTTP_BODY:
-            return handler.handleData(impl->connections.at(wsi),
-                                      (const char*)in, len);
+            handler.handleData(connections.at(wsi), (const char*)in, len);
+            break;
         case LWS_CALLBACK_HTTP_BODY_COMPLETION:
-            return handler.respondToRequest(impl->connections.at(wsi));
+            handler.prepareResponse(connections.at(wsi));
+            break;
 
         case LWS_CALLBACK_HTTP_WRITEABLE:
-            if (impl->connections.count(wsi))
-                return handler.respondToRequest(impl->connections.at(wsi));
-            break;
+            return handler.writeResponse(connections.at(wsi));
 
 #if LWS_LIBRARY_VERSION_NUMBER >= 2001000
         case LWS_CALLBACK_HTTP_DROP_PROTOCOL: // fall-through
 #endif
         case LWS_CALLBACK_CLOSED_HTTP:
-            impl->connections.erase(wsi);
+            connections.erase(wsi);
             break;
 
         case LWS_CALLBACK_ADD_POLL_FD:

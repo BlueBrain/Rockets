@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -31,7 +31,7 @@ namespace
 {
 const std::string proxyError = "ERROR proxy: HTTP/1.1 503 \n";
 #if LWS_LIBRARY_VERSION_NUMBER >= 3000000
-const char unavailablePortError[] = "ERROR on binding fd ";
+const char portError[] = "ERROR on binding fd ";
 #endif
 
 void handleErrorMessage(int, const char* message)
@@ -44,14 +44,14 @@ void handleErrorMessage(int, const char* message)
 #if LWS_LIBRARY_VERSION_NUMBER >= 3000000
     // Occurs during lws_create_vhost() if the chosen port is unavailable.
     // The returned vhost is valid(!) so the error can only be caught here.
-    if (strncmp(message, unavailablePortError, sizeof(unavailablePortError)))
+    if (strncmp(message, portError, sizeof(portError) - 1) == 0)
         throw unavailable_port_error(message);
 #endif
 
 #ifdef NDEBUG
     (void)message;
 #else
-    std::cerr << "rockets: lws_err: " << message << std::endl;
+    std::cerr << "rockets: lws_err: " << message; // ends with \n
 #endif
 }
 struct LogInitializer

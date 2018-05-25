@@ -177,7 +177,7 @@ int Channel::writeResponseHeaders(const CorsResponseHeaders& corsHeaders,
     if (n < 0)
         return -1;
 
-    if (response.body.size() > 0)
+    if (!response.body.empty())
     {
         // Only one lws_write() allowed, book another callback for sending body
         requestCallback();
