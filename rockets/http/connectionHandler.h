@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -46,15 +46,17 @@ public:
     ConnectionHandler(const Registry& registry);
     void setFilter(const Filter* filter);
 
-    int handleNewRequest(Connection& connection) const;
-    int handleData(Connection& connection, const char* data, size_t size) const;
-    int respondToRequest(Connection& connection) const;
+    void handleNewRequest(Connection& connection) const;
+    void handleData(Connection& connection, const char* data,
+                    size_t size) const;
+    void prepareResponse(Connection& connection) const;
+    int writeResponse(Connection& connection) const;
 
 private:
     const http::Filter* _filter = nullptr;
     const Registry& _registry;
 
-    int _replyToCorsPreflightRequest(Connection& connection) const;
+    void _prepareCorsPreflightResponse(Connection& connection) const;
     std::future<Response> _generateResponse(Connection& connection) const;
     std::future<Response> _callHandler(const Connection& connection,
                                        const std::string& endpoint) const;

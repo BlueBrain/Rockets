@@ -26,6 +26,10 @@
 
 #include <string.h> // memset
 
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+#define USE_EXPLICIT_VHOST 1
+#endif
+
 // was renamed in version 2.4
 // https://github.com/warmcat/libwebsockets/commit/fc995df
 #ifdef LWS_USE_LIBUV
@@ -71,7 +75,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     if (!context)
         throw std::runtime_error("libwebsocket init failed");
 
-#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+#if USE_EXPLICIT_VHOST
     // create vhost explicitly to retrieve port number which is no longer filled
     try
     {
@@ -157,19 +161,16 @@ void ServerContext::fillContextInfo(const std::string& uri,
         info.iface = interface.c_str();
     info.port = parsedUri.port;
     info.protocols = protocols.data();
-    // we're not using ssl
-    info.ssl_cert_filepath = nullptr;
-    info.ssl_private_key_filepath = nullptr;
     info.gid = -1;
     info.uid = -1;
-#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+#if USE_EXPLICIT_VHOST
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 #endif
     // header size: accommodate long "Authorization: Negotiate <kerberos token>"
     info.max_http_header_data = 8192;
     // service threads
     info.count_threads = threadCount;
-#if LWS_LIBRARY_VERSION_NUMBER <= 3000000
+#if LWS_LIBRARY_VERSION_NUMBER < 3000000
     // https://github.com/warmcat/libwebsockets/issues/1249
     info.max_http_header_pool = 1024;
 #endif
