@@ -185,7 +185,7 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel, Fixture)
 
     auto processResult = jsonRpc.processAsync(substractArray);
     std::atomic_bool done{false};
-    std::thread waitForResult([this, &done, &processResult] {
+    std::thread waitForResult([&done, &processResult] {
         BOOST_CHECK_EQUAL(processResult.get(), cancelledRequestResult);
         done = true;
     });
@@ -206,7 +206,7 @@ BOOST_FIXTURE_TEST_CASE(process_invalid_cancel_message, Fixture)
 
     auto processResult = jsonRpc.processAsync(substractArray);
     std::atomic_bool done{false};
-    std::thread waitForResult([this, &done, &processResult] {
+    std::thread waitForResult([&done, &processResult] {
         BOOST_CHECK_EQUAL(processResult.get(), cancelledRequestResult);
         done = true;
     });
@@ -229,7 +229,7 @@ BOOST_FIXTURE_TEST_CASE(process_arr_async_cancel_but_also_finished, Fixture)
     jsonRpc.bindAsync("subtract", std::bind(&substractArrAsyncForever, _1, _2));
 
     auto processResult = jsonRpc.processAsync(substractArray);
-    std::thread waitForResult([this, &processResult] {
+    std::thread waitForResult([&processResult] {
         BOOST_CHECK_EQUAL(processResult.get(), cancelledRequestResult);
     });
 
