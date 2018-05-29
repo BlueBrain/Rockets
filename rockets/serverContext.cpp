@@ -64,8 +64,14 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     if (uvLoop && !uvLoopRunning)
         throw std::runtime_error(
             "provided libuv loop either not valid or not running");
-    if (uvLoopRunning)
+
+    if(uvLoop)
+    {
+#if LWS_LIBRARY_VERSION_NUMBER >= 3000000
+        info.foreign_loops = &uvLoop;
+#endif
         info.options |= LWS_SERVER_OPTION_LIBUV;
+    }
 #else
     if (uvLoop)
         throw std::runtime_error("libwebsockets has no support for libuv");
@@ -89,11 +95,13 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 #endif
 
 #ifdef LWS_WITH_LIBUV
+#if LWS_LIBRARY_VERSION_NUMBER < 3000000
     if (uvLoopRunning)
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
         lws_uv_initloop(context, uvLoop_, &signal_cb, 0);
 #else
         lws_uv_initloop(context, uvLoop_, 0);
+#endif
 #endif
 #endif
 }

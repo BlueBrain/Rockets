@@ -25,7 +25,7 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/CMake/common/Common.cmake)
   message(FATAL_ERROR "CMake/common missing, run: git submodule update --init")
 endif()
 
-set(ROCKETS_DEB_DEPENDS libboost-test-dev libwebsockets-dev)
+set(ROCKETS_DEB_DEPENDS libboost-test-dev libwebsockets-dev libuv1-dev)
 set(ROCKETS_PORT_DEPENDS libwebsockets)
 
 include(Common)
