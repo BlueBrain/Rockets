@@ -271,7 +271,10 @@ static int callback_http(lws* wsi, const lws_callback_reasons reason,
             break;
 
         case LWS_CALLBACK_HTTP_WRITEABLE:
-            return handler.writeResponse(connections.at(wsi));
+            // A writable callback may exceptionally occcur without a connection
+            if (connections.count(wsi))
+                return handler.writeResponse(connections.at(wsi));
+            break;
 
 #if LWS_LIBRARY_VERSION_NUMBER >= 2001000
         case LWS_CALLBACK_HTTP_DROP_PROTOCOL: // fall-through
