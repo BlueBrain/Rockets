@@ -148,6 +148,7 @@ void ConnectionHandler::_prepareCorsPreflightResponse(
 
     const auto path = connection.getPathWithoutLeadingSlash();
     connection.setCorsResponseHeaders(_makeCorsPreflighResponseHeaders(path));
+    connection.requestWriteCallback();
 }
 
 CorsResponseHeaders ConnectionHandler::_makeCorsPreflighResponseHeaders(
