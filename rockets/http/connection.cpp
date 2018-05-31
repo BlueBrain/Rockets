@@ -132,7 +132,11 @@ int Connection::writeResponseBody()
     if (!responseHeadersSent)
         throw headers_not_sent_error;
     if (responseBodySent)
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
         throw body_already_sent_error;
+#else
+        return 0;
+#endif
     if (response.body.empty())
         throw body_empty_error;
 
