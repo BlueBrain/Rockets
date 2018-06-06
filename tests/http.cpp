@@ -240,6 +240,32 @@ BOOST_AUTO_TEST_CASE(listening_on_unavailable_port_throws)
     BOOST_CHECK_THROW(Server(":80", ""), std::runtime_error);
 }
 
+BOOST_AUTO_TEST_CASE(listening_on_localhost)
+{
+    try
+    {
+        Server server("localhost:", "");
+        BOOST_CHECK(server.getURI().rfind("127.0.0.1:", 0) == 0);
+    }
+    catch (...)
+    {
+        BOOST_CHECK(false);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(listening_on_127)
+{
+    try
+    {
+        Server server("127.0.0.1:", "");
+        BOOST_CHECK(server.getURI().rfind("127.0.0.1:", 0) == 0);
+    }
+    catch (...)
+    {
+        BOOST_CHECK(false);
+    }
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(registration, F, Fixtures, F)
 {
     BOOST_CHECK(F::server.handleGET(F::foo.getEndpoint(), F::foo));
