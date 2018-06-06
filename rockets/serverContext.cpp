@@ -65,7 +65,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
         throw std::runtime_error(
             "provided libuv loop either not valid or not running");
 
-    if(uvLoop)
+    if (uvLoop)
     {
 #if LWS_LIBRARY_VERSION_NUMBER >= 3000000
         info.foreign_loops = &uvLoop;
@@ -164,7 +164,7 @@ void ServerContext::fillContextInfo(const std::string& uri,
 {
     memset(&info, 0, sizeof(info));
     const auto parsedUri = parse(uri);
-    interface = parsedUri.host;
+    interface = getInterface(parsedUri.host);
     if (!interface.empty())
         info.iface = interface.c_str();
     info.port = parsedUri.port;

@@ -36,6 +36,8 @@
 #include <sys/socket.h>
 #endif
 
+#include <vector>
+
 namespace rockets
 {
 Uri parse(const std::string& uri)
@@ -74,37 +76,66 @@ lws_protocols null_protocol()
     return make_protocol(nullptr, nullptr, nullptr);
 }
 
+namespace
+{
+bool _isValidInterface(ifaddrs* interface)
+{
+    if (!interface->ifa_addr)
+        return false;
+    switch (interface->ifa_addr->sa_family)
+    {
+    case AF_INET:
+    case AF_INET6:
+        return true;
+    default:
+        return false;
+    }
+}
+socklen_t _getSocketAddressLength(ifaddrs* interface)
+{
+    switch (interface->ifa_addr->sa_family)
+    {
+    case AF_INET:
+        return sizeof(sockaddr_in);
+    case AF_INET6:
+        return sizeof(sockaddr_in6);
+    default:
+        throw std::logic_error("No IPv4/6 in your universe?!");
+    }
+}
+size_t _getIPAddressLength(ifaddrs* interface)
+{
+    switch (interface->ifa_addr->sa_family)
+    {
+    case AF_INET:
+        return INET_ADDRSTRLEN;
+    case AF_INET6:
+        return INET6_ADDRSTRLEN;
+    default:
+        throw std::logic_error("No IPv4/6 in your universe?!");
+    }
+}
+}
+
 std::string getIP(const std::string& iface)
 {
 #ifdef _WIN32
     return std::string();
 #else
-    struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST] = {'\0'};
-
+    ifaddrs* ifaddr;
     if (getifaddrs(&ifaddr) == -1)
         return std::string();
 
-    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+    char host[NI_MAXHOST] = {'\0'};
+    for (auto ifa = ifaddr; ifa; ifa = ifa->ifa_next)
     {
-        if (!ifa->ifa_addr || iface != ifa->ifa_name)
+        if (!_isValidInterface(ifa))
+            continue;
+        if (iface != ifa->ifa_name)
             continue;
 
-        socklen_t salen = 0;
-        switch (ifa->ifa_addr->sa_family)
-        {
-        case AF_INET:
-            salen = sizeof(sockaddr_in);
-            break;
-        case AF_INET6:
-            salen = sizeof(sockaddr_in6);
-            break;
-        default:
-            continue;
-        }
-
-        if (getnameinfo(ifa->ifa_addr, salen, host, NI_MAXHOST, NULL, 0,
-                        NI_NUMERICHOST) == 0)
+        if (getnameinfo(ifa->ifa_addr, _getSocketAddressLength(ifa), host,
+                        NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0)
         {
             // found it
             break;
@@ -115,11 +146,48 @@ std::string getIP(const std::string& iface)
 #endif
 }
 
+std::string getInterface(const std::string& hostnameOrIP)
+{
+    if (hostnameOrIP.empty())
+        return std::string();
+#ifdef _WIN32
+    return std::string();
+#else
+    ifaddrs* ifaddr;
+    if (getifaddrs(&ifaddr) == -1)
+        return std::string();
+
+    std::string iface;
+    for (auto ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+    {
+        if (!_isValidInterface(ifa))
+            continue;
+
+        auto socketAddress = (sockaddr_in*)ifa->ifa_addr;
+        std::vector<char> ip(_getIPAddressLength(ifa));
+        inet_ntop(ifa->ifa_addr->sa_family, (void*)&socketAddress->sin_addr,
+                  ip.data(), ip.size());
+
+        char host[NI_MAXHOST] = {'\0'};
+        getnameinfo(ifa->ifa_addr, _getSocketAddressLength(ifa), host,
+                    NI_MAXHOST, NULL, 0, NI_NAMEREQD);
+
+        if (hostnameOrIP == ip.data() || hostnameOrIP == host)
+        {
+            iface = ifa->ifa_name;
+            break;
+        }
+    }
+    freeifaddrs(ifaddr);
+    return iface;
+#endif
+}
+
 std::string getHostname()
 {
-    char host[NI_MAXHOST + 1] = {0};
+    char host[NI_MAXHOST] = {'\0'};
     gethostname(host, NI_MAXHOST);
-    host[NI_MAXHOST] = '\0';
+    host[NI_MAXHOST - 1] = '\0';
     return host;
 }
 }

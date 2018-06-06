@@ -41,6 +41,7 @@ lws_protocols make_protocol(const char* name, lws_callback_function* callback,
 lws_protocols null_protocol();
 
 std::string getIP(const std::string& iface);
+std::string getInterface(const std::string& hostnameOrIP);
 
 std::string getHostname();
 }

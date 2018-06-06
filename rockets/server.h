@@ -47,9 +47,9 @@ public:
     /**
      * Construct a new server.
      *
-     * If no interface is given, the server listens on all interfaces. If no
-     * port is given, the server selects a random port. Use getURI() to retrieve
-     * the chosen parameters.
+     * If no interface/hostname/IP is given, the server listens on all
+     * interfaces. If no port is given, the server selects a random port. Use
+     * getURI() to retrieve the chosen parameters.
      *
      * There are three ways of processing requests on the interface:
      * - Calling process() regularly in the application's main loop.
@@ -59,7 +59,7 @@ public:
      *   in this case the registered callbacks will be executed asynchronously
      *   from the internal service threads.
      *
-     * @param uri The server address in the form "[interface][:port]".
+     * @param uri The server address in the form "[hostname|IP|iface][:port]".
      * @param name The name of the websockets protocol, disabled if empty.
      * @param threadCount The number of internal service threads to use.
      * @throw std::runtime_error on malformed URI or connection issues.
@@ -71,15 +71,15 @@ public:
     /**
      * Construct a new server and integrate it to a libuv loop.
      *
-     * If no interface is given, the server listens on all interfaces. If no
-     * port is given, the server selects a random port. Use getURI() to retrieve
-     * the chosen parameters.
+     * If no interface/hostname/IP is given, the server listens on all
+     * interfaces. If no port is given, the server selects a random port. Use
+     * getURI() to retrieve the chosen parameters.
      *
      * All send & receive operations are automatically handled by the given
      * libuv loop, given that libwebsockets has been built with libuv support.
      *
      * @param uvLoop The libuv loop to run the send & receive operations on.
-     * @param uri The server address in the form "[interface][:port]".
+     * @param uri The server address in the form "[hostname|IP|iface][:port]".
      * @param name The name of the websockets protocol, disabled if empty.
      * @throw std::runtime_error on malformed URI, connection issues or no libuv
      * suppport.
@@ -90,7 +90,7 @@ public:
     /** Terminate the server. */
     ROCKETS_API ~Server();
 
-    /** @return the server URI in the form "[hostname][:port]". */
+    /** @return the server URI in the form "[hostname|IP][:port]". */
     ROCKETS_API std::string getURI() const;
 
     /** @return the server port. */
