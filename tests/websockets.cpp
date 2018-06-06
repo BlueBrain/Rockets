@@ -37,7 +37,7 @@ namespace
 {
 const auto wsProtocol = "ws_test_protocol";
 
-void connect(ws::Client& client, Server& server)
+void connect(ws::Client& client, Server& server, bool skipCheck = false)
 {
     auto future = client.connect(server.getURI(), wsProtocol);
     while (!is_ready(future))
@@ -46,8 +46,23 @@ void connect(ws::Client& client, Server& server)
         if (server.getThreadCount() == 0)
             server.process(0);
     }
-    BOOST_REQUIRE_NO_THROW(future.get());
+    if (skipCheck)
+        future.get();
+    else
+        BOOST_REQUIRE_NO_THROW(future.get());
 }
+
+struct ScopedEnvironment
+{
+    ScopedEnvironment(const std::string& key, const std::string& value)
+        : _key(key)
+    {
+        setenv(key.c_str(), value.c_str(), 0);
+    }
+    ~ScopedEnvironment() { unsetenv(_key.c_str()); }
+private:
+    std::string _key;
+};
 } // anonymous namespace
 
 BOOST_AUTO_TEST_CASE(server_construction)
@@ -90,6 +105,35 @@ BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_protocol)
     BOOST_CHECK_THROW(future.get(), std::runtime_error);
 }
 #endif
+
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy_and_no_proxy)
+{
+    ScopedEnvironment no_proxy("no_proxy", "127.0.0.1");
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", wsProtocol);
+    ws::Client client;
+    BOOST_CHECK_NO_THROW(connect(client, server, true));
+}
+
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy_and_no_proxy_list)
+{
+    ScopedEnvironment no_proxy("no_proxy", "localhost,*.0.0.1");
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", wsProtocol);
+    ws::Client client;
+    BOOST_CHECK_NO_THROW(connect(client, server, true));
+}
+
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy)
+{
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", wsProtocol);
+    ws::Client client;
+    BOOST_CHECK_THROW(connect(client, server, true), std::runtime_error);
+}
 
 /**
  * Fixtures to run all test cases with {0, 1, 2} server worker threads.

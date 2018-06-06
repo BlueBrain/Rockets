@@ -151,6 +151,18 @@ public:
 
 private:
 };
+
+struct ScopedEnvironment
+{
+    ScopedEnvironment(const std::string& key, const std::string& value)
+        : _key(key)
+    {
+        setenv(key.c_str(), value.c_str(), 0);
+    }
+    ~ScopedEnvironment() { unsetenv(_key.c_str()); }
+private:
+    std::string _key;
+};
 } // anonymous namespace
 
 namespace rockets
@@ -265,6 +277,53 @@ BOOST_AUTO_TEST_CASE(listening_on_127)
         BOOST_CHECK(false);
     }
 }
+
+#if CLIENT_SUPPORTS_REP_ERRORS
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy_and_no_proxy)
+{
+    ScopedEnvironment no_proxy("no_proxy", "127.0.0.1");
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", "");
+    try
+    {
+        MockClient client;
+        auto response = client.checkGET(server, "/unknown");
+        BOOST_CHECK_EQUAL(response, error404);
+    }
+    catch (...)
+    {
+        BOOST_CHECK(false);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy_and_no_proxy_list)
+{
+    ScopedEnvironment no_proxy("no_proxy", "localhost,*.0.0.1");
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", "");
+    try
+    {
+        MockClient client;
+        auto response = client.checkGET(server, "/unknown");
+        BOOST_CHECK_EQUAL(response, error404);
+    }
+    catch (...)
+    {
+        BOOST_CHECK(false);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(connect_to_localhost_with_proxy)
+{
+    ScopedEnvironment http_proxy("http_proxy", "proxy:12345");
+
+    Server server("127.0.0.1:", "");
+    MockClient client;
+    BOOST_CHECK_THROW(client.checkGET(server, "/unknown"), std::runtime_error);
+}
+#endif
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(registration, F, Fixtures, F)
 {
