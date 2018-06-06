@@ -30,6 +30,10 @@
 #include <string>
 #include <vector>
 
+#if LWS_LIBRARY_VERSION_NUMBER >= 2000000
+#define CLIENT_USE_EXPLICIT_VHOST 1
+#endif
+
 namespace rockets
 {
 /**
@@ -54,10 +58,15 @@ public:
 private:
     lws_context* context = nullptr;
     lws_context_creation_info info;
+    std::string wsProtocolName{"default"};
     std::vector<lws_protocols> protocols;
-    std::string wsProtocolName;
+#if CLIENT_USE_EXPLICIT_VHOST
+    lws_vhost* vhost = nullptr;
+#endif
 
     lws_client_connect_info makeConnectInfo(const Uri& uri) const;
+    void createVhost();
+    void disableProxy();
 };
 }
 

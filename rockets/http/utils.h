@@ -28,14 +28,6 @@ namespace http
 {
 std::string to_string(const CorsResponseHeader header);
 const char* to_cstring(const Method method);
-
-template <typename E>
-std::future<Response> make_error_future(const std::string& error)
-{
-    std::promise<Response> promise;
-    promise.set_exception(std::make_exception_ptr(E{error}));
-    return promise.get_future();
-}
 }
 }
 
