@@ -97,11 +97,14 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 #ifdef LWS_WITH_LIBUV
 #if LWS_LIBRARY_VERSION_NUMBER < 3000000
     if (uvLoopRunning)
+    {
+        lws_uv_sigint_cfg(context, 0, nullptr);
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
         lws_uv_initloop(context, uvLoop_, &signal_cb, 0);
 #else
         lws_uv_initloop(context, uvLoop_, 0);
 #endif
+    }
 #endif
 #endif
 }
