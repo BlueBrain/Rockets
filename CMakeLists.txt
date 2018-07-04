@@ -35,7 +35,7 @@ set(ROCKETS_MAINTAINER "Blue Brain Project <bbp-open-source@googlegroups.com>")
 set(ROCKETS_LICENSE LGPL)
 
 common_find_package(Boost SYSTEM COMPONENTS unit_test_framework)
-common_find_package(Libwebsockets SYSTEM)
+common_find_package(Libwebsockets)
 if(NOT Libwebsockets_FOUND) # Ubuntu package only has libwebsockets.pc
   common_find_package(libwebsockets SYSTEM REQUIRED)
   set(Libwebsockets_VERSION ${libwebsockets_VERSION})
