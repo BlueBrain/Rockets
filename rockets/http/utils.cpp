@@ -19,7 +19,8 @@
 
 #include "utils.h"
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 namespace rockets
 {

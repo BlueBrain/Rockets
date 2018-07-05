@@ -25,7 +25,8 @@
 #include <rockets/http/request.h>
 #include <rockets/http/types.h>
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 namespace rockets
 {

@@ -20,7 +20,8 @@
 #ifndef ROCKETS_DEBUG_H
 #define ROCKETS_DEBUG_H
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <iostream>
 #include <string>

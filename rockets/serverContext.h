@@ -25,7 +25,8 @@
 #include <rockets/utils.h>
 #include <rockets/ws/types.h>
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <string>
 #include <vector>

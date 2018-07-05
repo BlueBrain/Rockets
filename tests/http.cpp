@@ -31,7 +31,8 @@
 #include <rockets/http/response.h>
 #include <rockets/server.h>
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <iostream>
 #include <map>

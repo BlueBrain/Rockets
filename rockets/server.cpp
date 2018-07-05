@@ -32,7 +32,8 @@
 #include "ws/connection.h"
 #include "ws/messageHandler.h"
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <mutex>
 #include <set>

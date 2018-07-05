@@ -20,7 +20,8 @@
 #ifndef ROCKETS_PROXYCONNECTIONERROR_H
 #define ROCKETS_PROXYCONNECTIONERROR_H
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <stdexcept>
 

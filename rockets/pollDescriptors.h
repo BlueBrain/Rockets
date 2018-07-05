@@ -22,7 +22,8 @@
 
 #include "types.h"
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 #include <map>
 
 namespace rockets

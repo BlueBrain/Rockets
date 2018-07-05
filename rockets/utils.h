@@ -20,7 +20,8 @@
 #ifndef ROCKETS_UTILS_H
 #define ROCKETS_UTILS_H
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <memory>
 #include <string>

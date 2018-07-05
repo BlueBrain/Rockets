@@ -20,7 +20,8 @@
 #include "proxyConnectionError.h"
 #include "unavailablePortError.h"
 
-#include <libwebsockets.h>
+#include <rockets/websockets.h>
+
 
 #include <iostream>
 #include <stdexcept>
