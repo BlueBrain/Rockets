@@ -34,6 +34,8 @@ const char* reservedMethodError =
     "reserved by the standard / forbidden.";
 
 const Response::Error parseError{"Parse error", ErrorCode::parse_error};
+const Response::Error invalidParams{"Invalid params",
+                                    ErrorCode::invalid_params};
 const Response::Error invalidRequest{"Invalid Request",
                                      ErrorCode::invalid_request};
 const Response::Error methodNotFound{"Method not found",
@@ -60,18 +62,25 @@ inline std::string dump(const json& object)
 void RequestProcessor::process(const Request& request,
                                AsyncStringResponse callback)
 {
-    const auto document = json::parse(request.message, nullptr, false);
-    if (document.is_object())
+    try
     {
-        auto stringifyCallback = [callback](const json obj) {
-            callback(dump(obj));
-        };
-        _processCommand(document, request.clientID, stringifyCallback);
+        const auto document = json::parse(request.message);
+        if (document.is_object())
+        {
+            auto stringifyCallback = [callback](const json obj) {
+                callback(dump(obj));
+            };
+            _processCommand(document, request.clientID, stringifyCallback);
+        }
+        else if (document.is_array())
+            callback(_processBatchBlocking(document, request.clientID));
+        else
+            callback(dump(makeErrorResponse(invalidParams)));
     }
-    else if (document.is_array())
-        callback(_processBatchBlocking(document, request.clientID));
-    else
-        callback(dump(makeErrorResponse(parseError)));
+    catch (const json::parse_error& e)
+    {
+        callback(dump(makeErrorResponse(parseError, json(), e.what())));
+    }
 }
 
 void RequestProcessor::verifyValidMethodName(const std::string& method) const

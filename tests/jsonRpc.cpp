@@ -132,6 +132,18 @@ const std::string invalidJsonResult{
     R"({
     "error": {
         "code": -32700,
+        "data": "[json.exception.parse_error.101] parse error at 1: syntax error - invalid literal; last read: 'Z'",
+        "message": "Parse error"
+    },
+    "id": null,
+    "jsonrpc": "2.0"
+})"};
+
+const std::string invalidJsonArrayResult{
+    R"({
+    "error": {
+        "code": -32700,
+        "data": "[json.exception.parse_error.101] parse error at 10: syntax error - unexpected ':'; expected ']'",
         "message": "Parse error"
     },
     "id": null,
@@ -166,6 +178,16 @@ const std::string invalidJsonRpcVersionResult{
         "message": "Invalid Request"
     },
     "id": 3,
+    "jsonrpc": "2.0"
+})"};
+
+const std::string invalidParams{
+    R"({
+    "error": {
+        "code": -32602,
+        "message": "Invalid params"
+    },
+    "id": null,
     "jsonrpc": "2.0"
 })"};
 
@@ -429,7 +451,8 @@ BOOST_FIXTURE_TEST_CASE(wrong_json_rpc_request, Fixture)
 BOOST_FIXTURE_TEST_CASE(invalid_array_requests, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
-    BOOST_CHECK_EQUAL(jsonRpc.process({"[\"Zorgy!\": 1]"}), invalidJsonResult);
+    BOOST_CHECK_EQUAL(jsonRpc.process({"[\"Zorgy!\": 1]"}),
+                      invalidJsonArrayResult);
 
     BOOST_CHECK_EQUAL(jsonRpc.process({"[]"}), "");
     BOOST_CHECK_EQUAL(jsonRpc.process({"[1]"}), invalidBatch1RequestResult);
@@ -440,6 +463,12 @@ BOOST_FIXTURE_TEST_CASE(valid_array_request, Fixture)
 {
     jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
     BOOST_CHECK_EQUAL(jsonRpc.process(substractBatch), substractBatchResult);
+}
+
+BOOST_FIXTURE_TEST_CASE(invalid_params_request, Fixture)
+{
+    jsonRpc.bind("subtract", std::bind(&substractObj, std::placeholders::_1));
+    BOOST_CHECK_EQUAL(jsonRpc.process({"5"}), invalidParams);
 }
 
 BOOST_FIXTURE_TEST_CASE(process_array_notification, Fixture)
