@@ -57,6 +57,7 @@ public:
     Impl(const std::string& uri, const std::string& name,
          const unsigned int threadCount, void* uvLoop)
         : handler{registry}
+        , wsHandler(wsConnections)
     {
         context =
             std::make_unique<ServerContext>(uri, name, threadCount,
@@ -77,14 +78,29 @@ public:
     void openWsConnection(lws* wsi)
     {
         std::lock_guard<std::mutex> lock{wsConnectionsMutex};
-        wsConnections.emplace(wsi, std::make_shared<ws::Connection>(
-                                       std::make_unique<ws::Channel>(wsi)));
+        auto connection = std::make_shared<ws::Connection>(
+            std::make_unique<ws::Channel>(wsi));
+        wsConnections.emplace(wsi, connection);
+        wsHandler.handleOpenConnection(connection);
     }
 
     void closeWsConnection(lws* wsi)
     {
         std::lock_guard<std::mutex> lock{wsConnectionsMutex};
+        wsHandler.handleCloseConnection(wsConnections.at(wsi));
         wsConnections.erase(wsi);
+    }
+
+    void handleReceive(lws* wsi, const char* data, const size_t len)
+    {
+        std::lock_guard<std::mutex> lock{wsConnectionsMutex};
+        wsHandler.handleMessage(wsConnections.at(wsi), data, len);
+    }
+
+    void handleWrite(lws* wsi)
+    {
+        std::lock_guard<std::mutex> lock{wsConnectionsMutex};
+        wsConnections.at(wsi)->writeMessages();
     }
 
     http::Registry registry;
@@ -92,7 +108,7 @@ public:
     std::map<lws*, http::Connection> connections;
 
     std::mutex wsConnectionsMutex;
-    std::map<lws*, ws::ConnectionPtr> wsConnections;
+    ws::Connections wsConnections;
     ws::MessageHandler wsHandler;
 
     PollDescriptors pollDescriptors;
@@ -311,18 +327,15 @@ static int callback_websockets(lws* wsi, const lws_callback_reasons reason,
         {
         case LWS_CALLBACK_ESTABLISHED:
             impl->openWsConnection(wsi);
-            impl->wsHandler.handleOpenConnection(impl->wsConnections.at(wsi));
             break;
         case LWS_CALLBACK_CLOSED:
-            impl->wsHandler.handleCloseConnection(impl->wsConnections.at(wsi));
             impl->closeWsConnection(wsi);
             break;
         case LWS_CALLBACK_RECEIVE:
-            impl->wsHandler.handleMessage(impl->wsConnections.at(wsi),
-                                          (const char*)in, len);
+            impl->handleReceive(wsi, (const char*)in, len);
             break;
         case LWS_CALLBACK_SERVER_WRITEABLE:
-            impl->wsConnections.at(wsi)->writeMessages();
+            impl->handleWrite(wsi);
             break;
         default:
             break;

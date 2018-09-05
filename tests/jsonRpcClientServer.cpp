@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(close_client_while_request_pending)
     connectFuture.get();
 
     std::mutex forever;
-    bool responseSent{false};
+    std::atomic_bool responseSent{false};
     server.bindAsync("forever",
                      [&forever,
                       &responseSent](const jsonrpc::Request&,
