@@ -185,7 +185,7 @@ struct Fixture
 
     void processAllClients(Server& server)
     {
-        int maxServiceLoops = 10;
+        int maxServiceLoops = 20;
         while (!(receivedMessage1 && receivedMessage2 && receivedReply1 &&
                  receivedReply2) &&
                --maxServiceLoops)
@@ -493,8 +493,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(server_monitor_connections, F, Fixtures, F)
     BOOST_REQUIRE_EQUAL(F::server.getConnectionCount(), 1);
 
     F::processClient3Connect(F::server);
-    BOOST_CHECK_EQUAL(numConnections, 1);
     BOOST_CHECK(F::receivedConnectReply);
+    BOOST_CHECK_EQUAL(numConnections, 1);
 
     F::client3.reset();
     F::processClient3Disconnect(F::server);

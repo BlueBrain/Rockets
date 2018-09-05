@@ -351,7 +351,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(issue157, F, Fixtures, F)
 {
     F::server.handle(F::foo.getEndpoint(), F::foo);
 
-    bool running = true;
+    std::atomic_bool running{true};
     std::thread thread;
 
     if (F::server.getThreadCount() == 0)

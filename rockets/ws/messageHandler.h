@@ -22,16 +22,24 @@
 
 #include <rockets/ws/types.h>
 
+#include <libwebsockets.h>
+#include <map>
+
 namespace rockets
 {
 namespace ws
 {
+using Connections = std::map<lws*, ConnectionPtr>;
+
 /**
  * Handle message callbacks for text/binary messages.
  */
 class MessageHandler
 {
 public:
+    MessageHandler() = default;
+    MessageHandler(const Connections& connections);
+
     /**
      * Handle a new connection.
      *
@@ -71,9 +79,11 @@ public:
     MessageCallback callbackBinary;
 
 private:
-    void _sendResponse(const Response& response, ConnectionPtr connection);
+    void _sendResponseToRecipient(const Response& response,
+                                  ConnectionPtr connection);
 
-    std::vector<std::weak_ptr<Connection>> _connections;
+    static Connections _emptyConnections;
+    const Connections& _connections{_emptyConnections};
     std::string _buffer;
 };
 }

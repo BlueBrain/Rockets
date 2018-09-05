@@ -28,6 +28,13 @@ namespace rockets
 {
 namespace ws
 {
+Connections MessageHandler::_emptyConnections{};
+
+MessageHandler::MessageHandler(const Connections& connections)
+    : _connections(connections)
+{
+}
+
 void MessageHandler::handleMessage(ConnectionPtr connection, const char* data,
                                    const size_t len)
 {
@@ -67,80 +74,71 @@ void MessageHandler::handleMessage(ConnectionPtr connection, const char* data,
 
     if (response.format == Format::unspecified)
         response.format = format;
-    _sendResponse(response, connection);
+    _sendResponseToRecipient(response, connection);
 }
 
 void MessageHandler::handleOpenConnection(ConnectionPtr connection)
 {
-    _connections.push_back(connection);
     if (!callbackOpen)
         return;
 
     const auto clientID = reinterpret_cast<uintptr_t>(connection.get());
     auto responses = callbackOpen(clientID);
     for (auto& response : responses)
-        _sendResponse(response, connection);
+        _sendResponseToRecipient(response, connection);
 }
 
 void MessageHandler::handleCloseConnection(ConnectionPtr connection)
 {
-    auto end = std::remove_if(_connections.begin(), _connections.end(),
-                              [&connection](auto conn) {
-                                  return conn.lock() == connection;
-                              });
-    _connections.erase(end, _connections.end());
-
     if (!callbackClose)
         return;
 
     const auto clientID = reinterpret_cast<uintptr_t>(connection.get());
     auto responses = callbackClose(clientID);
     for (auto& response : responses)
-        _sendResponse(response, connection);
+        _sendResponseToRecipient(response, connection);
 }
 
-void MessageHandler::_sendResponse(const Response& response,
-                                   ConnectionPtr sender)
+void sendResponse(const Response& response, Connection& connection)
+{
+    switch (response.format)
+    {
+    case Format::unspecified:
+        break;
+    case Format::binary:
+        connection.sendBinary(std::move(response.message));
+        break;
+    case Format::text:
+    default:
+        connection.sendText(std::move(response.message));
+    }
+}
+
+void MessageHandler::_sendResponseToRecipient(const Response& response,
+                                              ConnectionPtr sender)
 {
     if (response.message.empty())
         return;
 
-    std::vector<std::weak_ptr<Connection>> connections;
     switch (response.recipient)
     {
     case Recipient::all:
-        connections = _connections;
-        break;
     case Recipient::others:
     {
-        connections = _connections;
-        auto end = std::remove_if(connections.begin(), connections.end(),
-                                  [&sender](auto conn) {
-                                      return conn.lock() == sender;
-                                  });
-        connections.erase(end, connections.end());
+        for (const auto& connection : _connections)
+        {
+            if (response.recipient == Recipient::others &&
+                connection.second == sender)
+            {
+                continue;
+            }
+            sendResponse(response, *connection.second);
+        }
         break;
     }
     case Recipient::sender:
     default:
-        connections.push_back(sender);
-    }
-
-    for (auto connection : connections)
-    {
-        switch (response.format)
-        {
-        case Format::unspecified:
-            break;
-        case Format::binary:
-            if (auto conn = connection.lock())
-                conn->sendBinary(std::move(response.message));
-            break;
-        case Format::text:
-        default:
-            if (auto conn = connection.lock())
-                conn->sendText(std::move(response.message));
-        }
+        sendResponse(response, *sender);
     }
 }
 }

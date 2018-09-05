@@ -44,7 +44,7 @@ private:
     ServerContext& context;
     std::vector<std::thread> serviceThreads;
     std::unique_ptr<std::atomic_bool[]> broadcastRequested;
-    bool exitService = false;
+    std::atomic_bool exitService{false};
 
     void handleBroadcastRequest(int tsi);
 
