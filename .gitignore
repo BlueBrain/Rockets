@@ -1,5 +1,13 @@
 .DS_Store
+.envrc
 *~
 *.autosave
 CMakeLists.txt.user*
 build/
+
+node_modules
+coverage
+docs
+dist
+out-tsc
+tmp
