@@ -1,25 +1,56 @@
+sudo: false
+
+env:
+  global:
+    - PROJECT_NAME=${PWD##*/}
+    - NINJA_STATUS="[%p %u/%t@%o %r]"
+
+matrix:
+  include:
+    # C++ Debug
+    - language: cpp
+      os: osx
+      env:
+        - BUILD_TYPE=Debug
+      before_install:
+        - ./scripts/install_requirements.sh
+      script:
+        - ./scripts/build_lib.sh
+    # C++ Release
+    - language: cpp
+      os: osx
+      env:
+        - BUILD_TYPE=Release
+      before_install:
+        - ./scripts/install_requirements.sh
+      script:
+        - ./scripts/build_lib.sh
+    # Node
+    - language: node_js
+      node_js: 8
+      env:
+        - secure: "F/wjnU5PXlUsD+E7YXul2nJLY+m2thugxHKGs7cKmiNO5FZNOKkclpmkgXN3wfLhHGDAvCF+cI/TqTX3AImIIKfdtMIa55B3wsRXcMeE2UckuhCOV+GCU7UWDmAEerK6TA2Trq393uARGwnB4GmYTZfLZjMGyTR8PdE7LWfboRIkffuzFAOhTX7wnQGQYJo21Htd0912IVPNHcVjMK0Ok8gwrapeNHAdED0XoUvMf+g5UcMzE4ayZYM7jIgc/NKHSOd4zZw56ycHKal5U677bG8k5pUE4SRnMl0iafsRGoTKDs8gJhO5F5zb4NKvCyPzhMUnDqSVMRCydWsFjIyzfsuOabbScmWl4dG2HrojmfJ6k8BuaMxTNWIxGgw5CrM+mdFilphypfZyz0jcGfBBPjVYFzllY+QznOB/w/RVTd32FBKDsXIZL5gmYZglVckm0h1dYz20R1U+kQHLGrn056iNluDWGrdQgQ2U6wMULiN3xM+x3n0bgRn2XhLyV0hxIzqFVuJgW6hiK5p2TssjpJUBOlYaPxr51LkeKsHil5zODseuDIWK9VL9LgV7CEinc9ssXgdd7vXtJw/w8mikov6wXE4L5QQDX5E9NjoGPKk/h7zxL2EUvRDMQuFaEkRyi99/O2MchI1F61qAk29rIr/7pzjFdNKI6zr/TxvfPY4="
+      before_install:
+        - |
+            yarn --cwd js install \
+                --pure-lockfile \
+                --non-interactive
+      script:
+        - yarn --cwd js test:cov
+        - yarn --cwd js build
+      before_deploy:
+        - source ./scripts/set_npm_package_version.sh
+      deploy:
+        provider: script
+        script:
+          - |
+            echo "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}\nalways-auth=true" > .npmrc && \
+            npm publish js
+        skip_cleanup: true
+        on:
+          condition: -z ${ROCKETS_CLIENT_VERSION+x}
+          branch: master
+
 notifications:
   email:
     on_success: never
-language: cpp
-sudo: false
-os:
-  - osx
-env:
-  global:
-    - NINJA_STATUS="[%p %u/%t@%o %r]"
-    - PROJECT_NAME=${PWD##*/}
-  matrix:
-  - BUILD_TYPE=Debug
-  - BUILD_TYPE=Release
-before_install:
-  - brew update
-  - brew outdated cmake || brew upgrade cmake
-  - brew install cppcheck doxygen ninja
-  - brew install libwebsockets openssl
-script:
-  - export CPATH=$(brew --prefix openssl)/include
-  - mkdir $BUILD_TYPE
-  - cd $BUILD_TYPE
-  - cmake -GNinja -DCLONE_SUBPROJECTS=ON -DCMAKE_INSTALL_PREFIX=$PWD/install -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-  - ninja all && ninja $PROJECT_NAME-tests && ninja install
