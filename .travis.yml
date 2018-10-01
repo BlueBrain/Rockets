@@ -43,7 +43,7 @@ matrix:
       deploy:
         provider: script
         # https://blog.travis-ci.com/2018-04-11-how_to_publish_node_js_packages_with_travis_ci_and_packagecloud
-        script: echo "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}" > .npmrc && npm publish js
+        script: npm config set '//registry.npmjs.org/:_authToken' ${NPM_AUTH_TOKEN} && npm publish js
         skip_cleanup: true
         on:
           condition: -z ${ROCKETS_CLIENT_VERSION+x}
