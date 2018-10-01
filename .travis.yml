@@ -42,7 +42,8 @@ matrix:
         - source ./scripts/set_npm_package_version.sh
       deploy:
         provider: script
-        script: echo -e "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}\nalways-auth=true" > .npmrc && npm publish js --acces=public
+        # https://blog.travis-ci.com/2018-04-11-how_to_publish_node_js_packages_with_travis_ci_and_packagecloud
+        script: echo "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}" > .npmrc && npm publish js
         skip_cleanup: true
         on:
           condition: -z ${ROCKETS_CLIENT_VERSION+x}
