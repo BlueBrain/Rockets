@@ -42,7 +42,7 @@ matrix:
         - source ./scripts/set_npm_package_version.sh
       deploy:
         provider: script
-        script: echo "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}\nalways-auth=true" > .npmrc && npm publish js
+        script: echo -e "//registry.npmjs.org/:_authToken=\${NPM_AUTH_TOKEN}\nalways-auth=true" > .npmrc && npm publish js --acces=public
         skip_cleanup: true
         on:
           condition: -z ${ROCKETS_CLIENT_VERSION+x}
