@@ -1,4 +1,6 @@
-sudo: false
+# https://github.com/travis-ci/travis-ci/issues/9815#issuecomment-425867404
+dist: xenial
+sudo: true
 
 env:
   global:
@@ -48,6 +50,43 @@ matrix:
         on:
           condition: -z ${ROCKETS_CLIENT_VERSION+x}
           branch: master
+    # Python 3.5
+    - language: python
+      python: 3.5
+      install:
+        - cd python
+        - pip install .
+        - pip install tox-travis
+      script:
+        - tox
+    # Python 3.6
+    - language: python
+      python: 3.6
+      install:
+        - cd python
+        - pip install .
+        - pip install tox-travis
+      script:
+        - tox
+      before_deploy:
+        - pip install twine
+      deploy:
+        provider: pypi
+        user: nachbaur
+        password:
+          secure: QT9y2YUvHLKhT5Tn8P23REtj8yeyxtmsSymr2IG0oqBn4sfmQbEpf7GO/NYiK1h+XQwh/h9iLSvqNXYtNc/hGJotP/6Jw0JXVrkI3tqepvQY0X0AzJATX1A2ioI1q09+SJQXgEdaDZj7Dafy0vyj+nIK+Ig1zjrb1wbv89EvpVi/QMh825tQPKlZk/Y7kOyJVWWqWQOuKxSfcc4suqiPEUplUFnOXtLJZr+Q5eNX2BcaiTmlzJ+IasVZYIZUatHTiDrL5j35VnXRYfGfn+CBp/CzfJBqPMKtzk+QJwla3UYYjreG4Z35xSHR83/ErYE3GOCFrmsIZ/fnu0cMMbMzQ6kz/DhblTiPqwO+clhqZlMqkpzV2WILLZsB19tld7hNQhBLP9W2qLnMg/2rWMfuqk4sqOgMBXzbuBUSAGKZLXXXe8W0uoVbRhIeh9Kf6CKTb+SXDPh8zxsuLpgdazultK2hXQcRIIf4NEFvzKlC+12+OVtuFkeKtSrUPSAcwlWNH28aJ/URuKMK7RjkqC5ATJrdtTmg1T5FQUA2Hf+fv7vHAQnAPM8gp2lD37MG34qRkhbc1icMCxc62mJ14atwgLk5jKqOAmKjV7EIHT4bZhtn0uyukWQYUIu5NaNswvHhHR5XyJbQMjZJ3dSGN/UJNpZKdXXsDHFpH/AwqYf8HA8=
+        on:
+          tags: true
+          branch: master
+    # Python 3.7
+    - language: python
+      python: 3.7
+      install:
+        - cd python
+        - pip install .
+        - pip install tox-travis
+      script:
+        - tox
 
 notifications:
   email:
