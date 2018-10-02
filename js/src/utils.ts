@@ -8,7 +8,8 @@ import {Notification} from './notification';
 import {Request} from './request';
 import {
     JsonRpcErrorObject,
-    JsonRpcNotification
+    JsonRpcNotification,
+    JsonRpcRequest
 } from './types';
 
 /**
@@ -20,6 +21,17 @@ export function isJsonRpcNotification<T>(value: any): value is JsonRpcNotificati
         && value.jsonrpc === JSON_RPC_VERSION
         && isString(value.method)
         && !value.hasOwnProperty('id');
+}
+
+/**
+ * Check if value is an RPC request
+ * @param value
+ */
+export function isJsonRpcRequest<T>(value: any): value is JsonRpcRequest<T> {
+    return isObject(value)
+        && value.jsonrpc === JSON_RPC_VERSION
+        && isString(value.method)
+        && (isString(value.id) || isNumber(value.id));
 }
 
 /**

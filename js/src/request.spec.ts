@@ -1,7 +1,7 @@
 // tslint:disable: forin
 import {JSON_RPC_VERSION} from './constants';
 import {Request} from './request';
-import {isJsonRpcRequest} from './testing';
+import {isJsonRpcRequest} from './utils';
 
 describe('Request', () => {
     it('complies with the JSON RPC 2.0 spec', () => {
