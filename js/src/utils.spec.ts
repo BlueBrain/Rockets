@@ -6,7 +6,8 @@ import {
 import {createJsonRpcNotification} from './testing';
 import {
     isJsonRpcErrorObject,
-    isJsonRpcNotification
+    isJsonRpcNotification,
+    isJsonRpcRequest
 } from './utils';
 
 
@@ -25,13 +26,13 @@ describe('isJsonRpcErrorObject()', () => {
 });
 
 describe('isJsonRpcNotification()', () => {
-    it('should return true if a value is a Notification', () => {
+    it('should return true if a value is a JsonRpcNotification', () => {
         const value = createJsonRpcNotification('test');
         expect(isJsonRpcNotification(value)).toBe(true);
     });
 
     it('should not be true for a request', () => {
-        const request = createRequest('test');
+        const request = createJsonRpcRequest('test');
         expect(isJsonRpcNotification(request)).toBe(false);
     });
 
@@ -47,8 +48,38 @@ describe('isJsonRpcNotification()', () => {
     });
 });
 
+describe('isJsonRpcRequest()', () => {
+    it('should return true if a value is a JsonRpcRequest', () => {
+        const request = createJsonRpcRequest('test');
+        expect(isJsonRpcRequest(request)).toBe(true);
+    });
 
-function createRequest<T>(method: string, params?: T) {
+    it('should not be true for a notification', () => {
+        const notification = createJsonRpcNotification('test');
+        expect(isJsonRpcRequest(notification)).toBe(false);
+    });
+
+    it('should return false otherwise', () => {
+        expect(isJsonRpcRequest({jsonrpc: JSON_RPC_VERSION})).toBe(false);
+        expect(isJsonRpcRequest({
+            jsonrpc: '1.0',
+            method: 'test',
+            id: 2
+        })).toBe(false);
+        expect(isJsonRpcRequest({
+            jsonrpc: JSON_RPC_VERSION,
+            method: 'test'
+        })).toBe(false);
+        expect(isJsonRpcRequest(null)).toBe(false);
+        expect(isJsonRpcRequest([])).toBe(false);
+        expect(isJsonRpcRequest({})).toBe(false);
+        expect(isJsonRpcRequest(true)).toBe(false);
+        expect(isJsonRpcRequest(1)).toBe(false);
+    });
+});
+
+
+function createJsonRpcRequest<T>(method: string, params?: T) {
     const id = uid(UID_BYTE_LENGTH);
     return {
         method,

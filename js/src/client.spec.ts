@@ -41,10 +41,7 @@ import {JsonRpcError} from './error';
 import {Notification} from './notification';
 import {Request} from './request';
 import {Response} from './response';
-import {
-    createJsonRpcResponse,
-    isJsonRpcRequest
-} from './testing';
+import {createJsonRpcResponse} from './testing';
 import {
     JsonRpcErrorObject,
     JsonRpcNotification,
@@ -52,7 +49,8 @@ import {
     JsonRpcResponse
 } from './types';
 import {
-    isJsonRpcNotification
+    isJsonRpcNotification,
+    isJsonRpcRequest
 } from './utils';
 
 
