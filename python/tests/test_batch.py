@@ -87,16 +87,18 @@ def test_batch():
     request_1 = rockets.Request('double', [2])
     request_2 = rockets.Request('double', [4])
     notification = rockets.Notification('foobar')
-    assert_equal(client.batch([request_1, request_2, notification]), [4, 8])
+    responses = client.batch([request_1, request_2, notification])
+    assert_equal(len(responses), 2)
+    results = list(map(lambda x: x.result, responses))
+    assert_equal(results, [4,8])
 
-
-@raises(TypeError)
+@raises(rockets.RequestError)
 def test_invalid_args():
     client = rockets.Client(server_url)
     client.batch('foo', 'bar')
 
 
-@raises(ValueError)
+@raises(rockets.RequestError)
 def test_empty_request():
     client = rockets.Client(server_url)
     client.batch([], [])
@@ -105,8 +107,11 @@ def test_empty_request():
 def test_method_not_found():
     client = rockets.Client(server_url)
     request = rockets.Request('foo', ['bar'])
-    assert_equal(client.batch([request]),
-                 [{'code': -32601, 'message': 'Method not found'}])
+    responses = client.batch([request])
+    assert_equal(len(responses), 1)
+    response = responses[0]
+    assert_equal(response.result, None)
+    assert_equal(response.error, {'code': -32601, 'message': 'Method not found'})
 
 
 @raises(rockets.request_error.RequestError)
@@ -134,7 +139,9 @@ def test_progress_single_request():
     tracker = ProgressTracker()
 
     request_task.add_progress_callback(tracker.on_progress)
-    assert_equal(asyncio.get_event_loop().run_until_complete(request_task), ['DONE'])
+    responses = asyncio.get_event_loop().run_until_complete(request_task)
+    assert_equal(len(responses), 1)
+    assert_equal(responses[0].result, 'DONE')
     assert_true(tracker.called)
 
 
@@ -165,7 +172,10 @@ def test_progress_multiple_requests():
     tracker = ProgressTracker()
 
     request_task.add_progress_callback(tracker.on_progress)
-    assert_equal(asyncio.get_event_loop().run_until_complete(request_task), ['DONE', 'DONE'])
+    responses = asyncio.get_event_loop().run_until_complete(request_task)
+    assert_equal(len(responses), 2)
+    results = list(map(lambda x: x.result, responses))
+    assert_equal(results, ['DONE', 'DONE'])
     assert_true(tracker.called)
 
 

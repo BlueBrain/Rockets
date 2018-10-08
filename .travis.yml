@@ -1,6 +1,4 @@
-# https://github.com/travis-ci/travis-ci/issues/9815#issuecomment-425867404
-dist: xenial
-sudo: true
+sudo: false
 
 env:
   global:
@@ -80,6 +78,9 @@ matrix:
           branch: master
     # Python 3.7
     - language: python
+      # https://github.com/travis-ci/travis-ci/issues/9815#issuecomment-425867404
+      dist: xenial
+      sudo: true
       python: 3.7
       install:
         - cd python

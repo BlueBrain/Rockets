@@ -64,9 +64,14 @@ class Client:
             self._client = AsyncClient(url, subprotocols=subprotocols, loop=loop)
             self._async_client = self._client
 
-    @copydoc(AsyncClient.url)
-    def url(self):  # noqa: D102 pylint: disable=missing-docstring
-        return self._client.url()
+        self.url = self._client.url
+        """The address of the connected Rockets server."""
+
+        self.ws_observable = self._client.ws_observable
+        """The websocket stream as an rx observable to subscribe to it."""
+
+        self.notifications = self._client.notifications
+        """The rx observable to subscribe to notifications from the server."""
 
     @copydoc(AsyncClient.connected)
     def connected(self):  # noqa: D102 pylint: disable=missing-docstring
@@ -74,26 +79,18 @@ class Client:
 
     @copydoc(AsyncClient.connect)
     def connect(self):  # noqa: D102 pylint: disable=missing-docstring
-        self._verify_environment()
         self._call_sync(self._client.connect())
 
     @copydoc(AsyncClient.disconnect)
     def disconnect(self):  # noqa: D102 pylint: disable=missing-docstring
-        self._verify_environment()
         self._call_sync(self._client.disconnect())
-
-    @copydoc(AsyncClient.as_observable)
-    def as_observable(self):  # noqa: D102 pylint: disable=missing-docstring
-        return self._client.as_observable()
 
     @copydoc(AsyncClient.send)
     def send(self, message):  # noqa: D102 pylint: disable=missing-docstring
-        self._verify_environment()
         self._call_sync(self._client.send(message))
 
     @copydoc(AsyncClient.notify)
     def notify(self, method, params=None):  # noqa: D102 pylint: disable=missing-docstring
-        self._verify_environment()
         self._call_sync(self._client.notify(method, params))
 
     @copydoc(AsyncClient.request)
@@ -102,7 +99,6 @@ class Client:
         :param int response_timeout: number of seconds to wait for the response
         :raises TimeoutError: if request was not answered within given response_timeout
         """
-        self._verify_environment()
         return self._call_sync(self._client.request(method, params), response_timeout)
 
     @copydoc(AsyncClient.batch)
@@ -111,7 +107,6 @@ class Client:
         :param int response_timeout: number of seconds to wait for the response
         :raises TimeoutError: if request was not answered within given response_timeout
         """
-        self._verify_environment()
         return self._call_sync(self._client.batch(requests), response_timeout)
 
     @copydoc(AsyncClient.async_request)
@@ -122,15 +117,13 @@ class Client:
     def async_batch(self, requests):  # noqa: D102 pylint: disable=missing-docstring
         return self._async_client.async_batch(requests)
 
-    def _verify_environment(self):
-        if not self._thread and self._client.loop().is_running():
-            raise RuntimeError("Unknown working environment")
-
     def _call_sync(self, original_function, response_timeout=None):
+        if not self._thread and self._client.loop.is_running():
+            raise RuntimeError("Unknown working environment")
         if self._thread:
             future = asyncio.run_coroutine_threadsafe(
                 original_function,
-                self._client.loop()
+                self._client.loop
             )
             return future.result(response_timeout)
-        return self._client.loop().run_until_complete(original_function)
+        return self._client.loop.run_until_complete(original_function)

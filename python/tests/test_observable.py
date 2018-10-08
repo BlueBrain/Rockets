@@ -22,16 +22,25 @@
 
 import asyncio
 import websockets
-from jsonrpcserver.response import RequestResponse
 
 from nose.tools import assert_true, assert_false, assert_equal, raises
 import rockets
+import json
 
 
 async def hello(websocket, path):
-    name = await websocket.recv()
-    greeting = "Hello {0}!".format(name)
-    await websocket.send(greeting)
+    async for message in websocket:
+        try:
+            json_message = json.loads(message)
+            method = json_message['method']
+            if method == 'NotifyMe':
+                notification = rockets.Notification('Hello')
+                await websocket.send(str(notification.json))
+        except Exception:
+            greeting = "Hello {0}!".format(message)
+            await websocket.send(greeting)
+            if message == 'Rockets':
+                break
 
 server_url = None
 def setup():
@@ -50,7 +59,7 @@ def test_subscribe_async_client():
         def _on_message(message):
             received.set_result(message)
 
-        client.as_observable().subscribe(_on_message)
+        client.ws_observable.subscribe(_on_message)
         await client.send("Rockets")
         await received
 
@@ -66,7 +75,22 @@ def test_subscribe():
         assert_equal(message, 'Hello Rockets!')
         asyncio.get_event_loop().stop()
 
-    client.as_observable().subscribe(_on_message)
+    client.ws_observable.subscribe(_on_message)
+    client.send("Rockets")
+    asyncio.get_event_loop().run_forever()
+
+
+def test_notifications():
+    client = rockets.Client(server_url)
+    client.connect()
+
+    def _on_message(message):
+        assert_equal(message.method, 'Hello')
+        asyncio.get_event_loop().stop()
+
+    client.notifications.subscribe(_on_message)
+    client.send("Something")
+    client.notify("NotifyMe")
     client.send("Rockets")
     asyncio.get_event_loop().run_forever()
 

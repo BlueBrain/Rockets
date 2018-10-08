@@ -28,15 +28,17 @@ import sys
 
 from functools import reduce
 import websockets
-from jsonrpc.jsonrpc2 import JSONRPC20Request, JSONRPC20Response
+from jsonrpc.jsonrpc2 import JSONRPC20Request
 from rx import Observable
 
 from .notification import Notification
 from .request import Request
-from .request_error import SOCKET_CLOSED_ERROR, RequestError
+from .request_error import INVALID_REQUEST, SOCKET_CLOSED_ERROR, RequestError
 from .request_progress import RequestProgress
 from .request_task import RequestTask
-from .utils import set_ws_protocol
+from .response import Response
+from .utils import is_json_rpc_notification, is_json_rpc_response, is_progress_notification, \
+                   set_ws_protocol
 
 
 class AsyncClient:
@@ -53,23 +55,27 @@ class AsyncClient:
         :param list subprotocols: The websocket protocols to use
         :param asyncio.AbstractEventLoop loop: Event loop where this client should run in
         """
-        self._url = set_ws_protocol(url)
+        self.url = set_ws_protocol(url)
+        """The address of the connected Rockets server."""
+
         if not subprotocols:
             subprotocols = ['rockets']
         self._subprotocols = subprotocols
 
         self._ws = None
 
-        self._loop = loop
-        if not self._loop:
-            self._loop = asyncio.get_event_loop()
+        self.loop = loop
+        """The event loop where this client is running in."""
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
 
         def _ws_loop(observer):
             """Internal: synchronous wrapper for async _ws_loop"""
-            asyncio.ensure_future(self._ws_loop(observer), loop=self._loop)
+            asyncio.ensure_future(self._ws_loop(observer), loop=self.loop)
 
         # pylint: disable=E1101
-        self._ws_observable = Observable.create(_ws_loop).publish().auto_connect()
+        self.ws_observable = Observable.create(_ws_loop).publish().auto_connect()
+        """The websocket stream as an rx observable to subscribe to it."""
         # pylint: enable=E1101
 
         def _json_filter(value):
@@ -80,19 +86,14 @@ class AsyncClient:
                 return False
 
         # filter everything that is not JSON
-        self._json_stream = self._ws_observable \
-            .filter(lambda value: not isinstance(value, (bytes, bytearray, memoryview))) \
-            .filter(_json_filter) \
-            .map(json.loads)
+        self._json_stream = self.ws_observable.filter(_json_filter).map(json.loads)
 
-    def url(self):
-        """
-        Returns the address of the connected Rockets server.
+        def _notifications_filter(value):
+            return is_json_rpc_notification(value) and not is_progress_notification(value)
 
-        :return: The address of the connected Rockets server.
-        :rtype: str
-        """
-        return self._url
+        self.notifications = self._json_stream.filter(_notifications_filter)\
+            .map(lambda x: Notification.from_json(json.dumps(x)))
+        """The rx observable to subscribe to notifications from the server."""
 
     def connected(self):
         """
@@ -103,31 +104,13 @@ class AsyncClient:
         """
         return True if self._ws and self._ws.open else False
 
-    def as_observable(self):
-        """
-        Returns the websocket stream as an rx observable to subscribe to it.
-
-        :return: the websocket observable
-        :rtype: :class:`rx.Observable`
-        """
-        return self._ws_observable
-
-    def loop(self):
-        """
-        Returns the event loop where this client is running in.
-
-        :return: event loop
-        :rtype: :class:`asyncio.AbstractEventLoop`
-        """
-        return self._loop
-
     async def connect(self):
         """Connect this client to the Rockets server"""
         if self.connected():
             return
 
-        self._ws = await websockets.connect(self._url, subprotocols=self._subprotocols,
-                                            loop=self._loop)
+        self._ws = await websockets.connect(self.url, subprotocols=self._subprotocols,
+                                            loop=self.loop)
 
     async def disconnect(self):
         """Disconnect this client from the Rockets server."""
@@ -168,17 +151,18 @@ class AsyncClient:
             params = [params]
         request = Request(method, params)
         try:
-            response_future = self._loop.create_future()
+            response_future = self.loop.create_future()
 
+            request_id = request.request_id()
             await self.connect()
-            self._setup_response_filter(response_future, request.request_id())
-            self._setup_progress_filter(response_future, request.request_id())
+            self._setup_response_filter(response_future, request_id)
+            self._setup_progress_filter(response_future, request_id)
 
             await self.send(request.json)
             await response_future
             return response_future.result()
         except asyncio.CancelledError:
-            await self.notify('cancel', {'id': request.request_id()})
+            await self.notify('cancel', {'id': request_id})
 
     async def batch(self, requests):
         """
@@ -187,15 +171,16 @@ class AsyncClient:
         :param list requests: list of requests and/or notifications to send as batch
         :return: future object with list of responses
         :rtype: :class:`asyncio.Future`
-        :raises TypeError: if methods and/or params are not a list
-        :raises ValueError: if methods are empty
+        :raises RequestError: if methods and/or params are not a list
+        :raises RequestError: if methods are empty
         """
         if not requests:
-            raise ValueError("Empty batch request not allowed")
+            raise INVALID_REQUEST
 
+        # is valid for both, requests and notifications
         for request in requests:
             if not isinstance(request, JSONRPC20Request):
-                raise TypeError('Not a valid JSONRPC request')
+                raise INVALID_REQUEST
 
         request_ids = list()
         for request in requests:
@@ -207,7 +192,7 @@ class AsyncClient:
                 return x.data
             request = Request.from_data(list(map(_data, requests)))
 
-            response_future = self._loop.create_future()
+            response_future = self.loop.create_future()
 
             await self.connect()
             self._setup_batch_response_filter(response_future, request_ids)
@@ -229,10 +214,10 @@ class AsyncClient:
         :return: :class:`RequestTask` object
         :rtype: :class:`RequestTask`
         """
-        self._loop.set_task_factory(lambda loop, coro: RequestTask(coro=coro, loop=loop))
+        self.loop.set_task_factory(lambda loop, coro: RequestTask(coro=coro, loop=loop))
 
         task = self.request(method, params)
-        return asyncio.ensure_future(task, loop=self._loop)
+        return asyncio.ensure_future(task, loop=self.loop)
 
     def async_batch(self, requests):
         """
@@ -242,10 +227,10 @@ class AsyncClient:
         :return: :class:`RequestTask` object
         :rtype: :class:`RequestTask`
         """
-        self._loop.set_task_factory(lambda loop, coro: RequestTask(coro=coro, loop=loop))
+        self.loop.set_task_factory(lambda loop, coro: RequestTask(coro=coro, loop=loop))
 
         task = self.batch(requests)
-        return asyncio.ensure_future(task, loop=self._loop)
+        return asyncio.ensure_future(task, loop=self.loop)
 
     async def _ws_loop(self, observer):
         """Internal: The loop for feeding an rxpy observer."""
@@ -259,16 +244,15 @@ class AsyncClient:
                 async for message in self._ws:
                     observer.on_next(message)
                 observer.on_completed()
-        except websockets.ConnectionClosed as e:  # pragma: no cover
-            print(e)
+        except websockets.ConnectionClosed:  # pragma: no cover
             observer.on_completed()
 
     def _setup_response_filter(self, response_future, request_id):
         def _response_filter(value):
-            return 'id' in value and value['id'] == request_id
+            return is_json_rpc_response(value) and value['id'] == request_id
 
         def _to_response(value):
-            response = JSONRPC20Response(**value)
+            response = Response(**value)
             if response.result:
                 return response.result
             return response.error
@@ -276,7 +260,7 @@ class AsyncClient:
         def _on_next(value):
             if not response_future.done():
                 if isinstance(value, dict) and 'code' in value:
-                    response_future.set_exception(RequestError(value['code'], value['message']))
+                    response_future.set_exception(RequestError(**value))
                 else:
                     response_future.set_result(value)
 
@@ -293,20 +277,16 @@ class AsyncClient:
 
     def _setup_batch_response_filter(self, response_future, request_ids):
         def _response_filter(value):
+            if not isinstance(value, list):
+                return False
             for response in value:
-                if 'id' not in response or response['id'] not in request_ids:
+                if not is_json_rpc_response(response) or response['id'] not in request_ids:
                     return False  # pragma: no cover
             return True
 
         def _to_response(value):
-            responses = [JSONRPC20Response(**i) for i in value]
-            result = list()
-            for response in responses:
-                if response.result:
-                    result.append(response.result)
-                else:
-                    result.append(response.error)
-            return result
+            responses = [Response(**i) for i in value]
+            return responses
 
         def _on_next(value):
             if not response_future.done():
@@ -327,9 +307,7 @@ class AsyncClient:
         task = asyncio.Task.current_task()
         if task and isinstance(task, RequestTask):
             def _progress_filter(value):
-                return 'method' in value and value['method'] == 'progress' and \
-                    'params' in value and 'id' in value['params'] and \
-                    value['params']['id'] == request_id
+                return is_progress_notification(value) and value['params']['id'] == request_id
 
             def _to_progress(value):
                 progress = Request.from_data(value).params
@@ -350,9 +328,7 @@ class AsyncClient:
         items = dict()
         if task and isinstance(task, RequestTask):
             def _progress_filter(value):
-                return 'method' in value and value['method'] == 'progress' and \
-                    'params' in value and 'id' in value['params'] and \
-                    value['params']['id'] in request_ids
+                return is_progress_notification(value) and value['params']['id'] in request_ids
 
             def _to_progress(value):
                 progress = Request.from_data(value).params

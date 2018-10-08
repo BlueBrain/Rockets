@@ -20,19 +20,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
 
-"""Reports the error code and message of a request that has failed."""
+"""A JSON-RPC 2.0 notification"""
+
+from jsonrpc.jsonrpc2 import JSONRPC20Response
 
 
-class RequestError(Exception):
-    """Reports the error code and message of a request that has failed."""
-
-    def __init__(self, code, message, data=None):
-        super(RequestError, self).__init__(message)
-
-        self.code = code
-        self.message = message
-        self.data = data
-
-
-SOCKET_CLOSED_ERROR = RequestError(-30100, 'Socket connection closed')
-INVALID_REQUEST = RequestError(-32600, 'Invalid Request')
+class Response(JSONRPC20Response):
+    """A JSON-RPC 2.0 response"""

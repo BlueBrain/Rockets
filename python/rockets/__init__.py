@@ -29,7 +29,8 @@ from .request import Request
 from .request_error import RequestError
 from .request_progress import RequestProgress
 from .request_task import RequestTask
+from .response import Response
 from .version import VERSION as __version__
 
 __all__ = ['AsyncClient', 'Client', 'Notification', 'Request', 'RequestError', 'RequestProgress',
-           'RequestTask']
+           'RequestTask', 'Response']

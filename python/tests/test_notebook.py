@@ -137,7 +137,10 @@ class TestClass():
             await task
 
         asyncio.get_event_loop().run_until_complete(run_notebook_cell())
-        assert_equal(asyncio.get_event_loop().run_until_complete(called), [4, 8])
+        responses = asyncio.get_event_loop().run_until_complete(called)
+        assert_equal(len(responses), 2)
+        results = list(map(lambda x: x.result, responses))
+        assert_equal(results, [4,8])
 
 
 if __name__ == '__main__':

@@ -79,3 +79,19 @@ def random_string(length=8, chars=digits + ascii_lowercase):
     """
     while True:
         yield "".join([choice(chars) for _ in range(length)])
+
+
+def is_json_rpc_response(value):
+    """Check if the given value is valid JSON-RPC response."""
+    return isinstance(value, dict) and 'id' in value
+
+
+def is_json_rpc_notification(value):
+    """Check if the given value is valid JSON-RPC notification."""
+    return isinstance(value, dict) and 'method' in value and 'id' not in value
+
+
+def is_progress_notification(value):
+    """Check if the given value is valid Rockets progress notification."""
+    return isinstance(value, dict) and 'method' in value and value['method'] == 'progress' and \
+        'params' in value and 'id' in value['params']

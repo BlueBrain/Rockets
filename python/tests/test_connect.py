@@ -40,31 +40,31 @@ def setup():
 
 def test_connect_ws():
     client = rockets.Client('ws://'+server_url)
-    assert_equal(client.url(), 'ws://'+server_url)
+    assert_equal(client.url, 'ws://'+server_url)
     assert_false(client.connected())
 
 
 def test_connect_wss():
     client = rockets.Client('wss://'+server_url)
-    assert_equal(client.url(), 'wss://'+server_url)
+    assert_equal(client.url, 'wss://'+server_url)
     assert_false(client.connected())
 
 
 def test_connect_http():
     client = rockets.Client('http://'+server_url)
-    assert_equal(client.url(), 'ws://'+server_url)
+    assert_equal(client.url, 'ws://'+server_url)
     assert_false(client.connected())
 
 
 def test_connect_https():
     client = rockets.Client('https://'+server_url)
-    assert_equal(client.url(), 'wss://'+server_url)
+    assert_equal(client.url, 'wss://'+server_url)
     assert_false(client.connected())
 
 
 def test_connect():
     client = rockets.Client(server_url)
-    assert_equal(client.url(), 'ws://'+server_url)
+    assert_equal(client.url, 'ws://'+server_url)
     assert_false(client.connected())
 
 
