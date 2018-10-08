@@ -252,7 +252,7 @@ class AsyncClient:
             return is_json_rpc_response(value) and value['id'] == request_id
 
         def _to_response(value):
-            response = Response(**value)
+            response = Response.from_json(json.dumps(value))
             if response.result:
                 return response.result
             return response.error
@@ -285,7 +285,7 @@ class AsyncClient:
             return True
 
         def _to_response(value):
-            responses = [Response(**i) for i in value]
+            responses = [Response.from_json(json.dumps(i)) for i in value]
             return responses
 
         def _on_next(value):

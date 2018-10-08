@@ -114,7 +114,7 @@ class TestClass():
 
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.Client('ws://'+self.server_url)
+            client = rockets.AsyncClient('ws://'+self.server_url)
             task = client.async_request('ping')
             task.add_done_callback(_on_done)
             await task
@@ -129,7 +129,7 @@ class TestClass():
 
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.Client('ws://'+self.server_url)
+            client = rockets.AsyncClient('ws://'+self.server_url)
             request_1 = rockets.Request('double', [2])
             request_2 = rockets.Request('double', [4])
             task = client.async_batch([request_1, request_2])
@@ -140,7 +140,7 @@ class TestClass():
         responses = asyncio.get_event_loop().run_until_complete(called)
         assert_equal(len(responses), 2)
         results = list(map(lambda x: x.result, responses))
-        assert_equal(results, [4,8])
+        assert_equal(results, [4, 8])
 
 
 if __name__ == '__main__':

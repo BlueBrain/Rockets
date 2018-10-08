@@ -29,7 +29,8 @@ import json
 
 
 async def hello(websocket, path):
-    async for message in websocket:
+    while True:
+        message = await websocket.recv()
         try:
             json_message = json.loads(message)
             method = json_message['method']

@@ -27,3 +27,16 @@ from jsonrpc.jsonrpc2 import JSONRPC20Response
 
 class Response(JSONRPC20Response):
     """A JSON-RPC 2.0 response"""
+
+    @classmethod
+    def from_json(cls, json_str):
+        """Create Response from JSON string"""
+        data = cls.deserialize(json_str)
+        return cls.from_data(data)
+
+    @classmethod
+    def from_data(cls, data):
+        """Create Response from dict"""
+        data['_id'] = data['id']
+        response = Response(**data)
+        return response

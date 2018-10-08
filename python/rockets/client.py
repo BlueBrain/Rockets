@@ -30,14 +30,13 @@ from .utils import copydoc
 
 
 class Client:
-    """Client that support synchronous and asynchronous usage of the :class:`AsyncClient`."""
+    """Client that support synchronous usage of the :class:`AsyncClient`."""
 
     def __init__(self, url, subprotocols=None, loop=None):
         """
         Setup the :class:`AsyncClient` for synchronous usage.
 
-        In case the given loop is running, uses a second threaded client to achieve synchronous
-        execution.
+        In case the given loop is running, uses a threaded client to achieve synchronous execution.
 
         :param str url: The address of the Rockets server.
         :param list subprotocols: The websocket protocols to use
@@ -58,11 +57,9 @@ class Client:
             self._thread.start()
 
             self._client = AsyncClient(url, subprotocols=subprotocols, loop=thread_loop)
-            self._async_client = AsyncClient(url, subprotocols=subprotocols, loop=loop)
         else:
             self._thread = None
             self._client = AsyncClient(url, subprotocols=subprotocols, loop=loop)
-            self._async_client = self._client
 
         self.url = self._client.url
         """The address of the connected Rockets server."""
@@ -109,21 +106,10 @@ class Client:
         """
         return self._call_sync(self._client.batch(requests), response_timeout)
 
-    @copydoc(AsyncClient.async_request)
-    def async_request(self, method, params=None):  # noqa: D102 pylint: disable=missing-docstring
-        return self._async_client.async_request(method, params)
-
-    @copydoc(AsyncClient.batch)
-    def async_batch(self, requests):  # noqa: D102 pylint: disable=missing-docstring
-        return self._async_client.async_batch(requests)
-
     def _call_sync(self, original_function, response_timeout=None):
         if not self._thread and self._client.loop.is_running():
             raise RuntimeError("Unknown working environment")
         if self._thread:
-            future = asyncio.run_coroutine_threadsafe(
-                original_function,
-                self._client.loop
-            )
+            future = asyncio.run_coroutine_threadsafe(original_function, self._client.loop)
             return future.result(response_timeout)
         return self._client.loop.run_until_complete(original_function)
