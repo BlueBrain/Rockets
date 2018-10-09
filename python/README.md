@@ -51,16 +51,29 @@ print(client.connected())
 ```
 
 
-#### Notifications
+#### Server messages
 Listen to server notifications:
 ```py
 from rockets import Client
 
 client = Client('myhost:8080')
 
-client.as_observable().subscribe(lambda msg: print("Got message:", msg))
+client.notifications.subscribe(lambda msg: print("Got message:", msg.data))
 ```
 
+**NOTE**: The notification object is of type `Notification`.
+
+Listen to any server message:
+```py
+from rockets import Client
+
+client = Client('myhost:8080')
+
+client.ws_observable.subscribe(lambda msg: print("Got message:", msg))
+```
+
+
+#### Notifications
 Send notifications:
 ```py
 from rockets import Client
@@ -82,16 +95,41 @@ response = client.request('mymethod', {'ping': True})
 print(response)
 ```
 
-Make an asynchronous request using `asyncio`:
+Make an asynchronous request, using the `AsyncClient` and `asyncio`:
 ```py
 import asyncio
-from rockets import Client
+from rockets import AsyncClient
 
-client = Client('myhost:8080')
+client = AsyncClient('myhost:8080')
 
 request_task = client.async_request('mymethod', {'ping': True})
 asyncio.get_event_loop().run_until_complete(request_task)
 print(request_task.result())
+```
+
+If the `RequestTask` is not needed, i.e. no `cancel()` or `add_progress_callback()` is desired, use the `request()` coroutine:
+
+```py
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+coro = client.request('mymethod', {'ping': True})
+result = asyncio.get_event_loop().run_until_complete(coro)
+print(result)
+```
+
+If you are already in an `async` function or in a Jupyter notebook cell, you may have use `await` to execute an asynchronous request:
+```py
+# Inside a notebook cell here
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+result = await client.request('mymethod', {'ping': True})
+print(result)
 ```
 
 Handle a request error:
@@ -112,7 +150,7 @@ Cancel a request:
 ```py
 from rockets import Client
 
-client = Client('myhost:8080')
+client = AsyncClient('myhost:8080')
 
 request_task = client.async_request('mymethod')
 request_task.cancel()
@@ -122,7 +160,7 @@ Get progress updates for a request:
 ```py
 from rockets import Client
 
-client = Client('myhost:8080')
+client = AsyncClient('myhost:8080')
 
 request_task = client.async_request('mymethod')
 request_task.add_progress_callback(lambda progress: print(progress))
@@ -149,7 +187,7 @@ Cancel a batch request:
 ```py
 from rockets import Client
 
-client = Client('myhost:8080')
+client = AsyncClient('myhost:8080')
 
 request = Request('myrequest')
 notification = Notification('mynotify')
