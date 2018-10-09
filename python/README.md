@@ -26,6 +26,16 @@ pip install rockets
 ### Usage
 ---------
 
+#### `Client` vs. `AsyncClient`
+Rockets provides to types of clients to support asychronous and synchronous usage.
+
+The `AsyncClient` exposes all of its functionality as `async` functions, hence an `asyncio`
+[event loop](https://docs.python.org/3/library/asyncio-eventloop.html) is needed to complete pending
+execution via `await` or `run_until_complete()`.
+
+For simplicity, a synchronous `Client` is provided which automagically executes in a synchronous,
+blocking fashion.
+
 #### Connection
 Create a client and connect:
 ```py
@@ -74,7 +84,7 @@ client.ws_observable.subscribe(lambda msg: print("Got message:", msg))
 
 
 #### Notifications
-Send notifications:
+Send notifications to the server:
 ```py
 from rockets import Client
 
@@ -95,43 +105,6 @@ response = client.request('mymethod', {'ping': True})
 print(response)
 ```
 
-Make an asynchronous request, using the `AsyncClient` and `asyncio`:
-```py
-import asyncio
-from rockets import AsyncClient
-
-client = AsyncClient('myhost:8080')
-
-request_task = client.async_request('mymethod', {'ping': True})
-asyncio.get_event_loop().run_until_complete(request_task)
-print(request_task.result())
-```
-
-If the `RequestTask` is not needed, i.e. no `cancel()` or `add_progress_callback()` is desired, use the `request()` coroutine:
-
-```py
-import asyncio
-from rockets import AsyncClient
-
-client = AsyncClient('myhost:8080')
-
-coro = client.request('mymethod', {'ping': True})
-result = asyncio.get_event_loop().run_until_complete(coro)
-print(result)
-```
-
-If you are already in an `async` function or in a Jupyter notebook cell, you may have use `await` to execute an asynchronous request:
-```py
-# Inside a notebook cell here
-import asyncio
-from rockets import AsyncClient
-
-client = AsyncClient('myhost:8080')
-
-result = await client.request('mymethod', {'ping': True})
-print(result)
-```
-
 Handle a request error:
 ```py
 from rockets import Client, RequestError
@@ -146,9 +119,64 @@ except RequestError as err:
 
 **NOTE**: Any error that may occur will be a `RequestError`.
 
+
+#### Asynchronous requests
+Make an asynchronous request, using the `AsyncClient` and `asyncio`:
+```py
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+request_task = client.async_request('mymethod', {'ping': True})
+asyncio.get_event_loop().run_until_complete(request_task)
+print(request_task.result())
+```
+
+Alternatively, you can use `add_done_callback()` from the returned `RequestTask` which is called
+once the request has finished:
+
+```py
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+request_task = client.async_request('mymethod', {'ping': True})
+request_task.add_done_callback(lambda task: print(task.result()))
+asyncio.get_event_loop().run_until_complete(request_task)
+```
+
+If the `RequestTask` is not needed, i.e. no `cancel()` or `add_progress_callback()` is desired, use
+the `request()` coroutine:
+
+```py
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+coro = client.request('mymethod', {'ping': True})
+result = asyncio.get_event_loop().run_until_complete(coro)
+print(result)
+```
+
+If you are already in an `async` function or in a Jupyter notebook cell, you may use `await` to
+execute an asynchronous request:
+```py
+# Inside a notebook cell here
+import asyncio
+from rockets import AsyncClient
+
+client = AsyncClient('myhost:8080')
+
+result = await client.request('mymethod', {'ping': True})
+print(result)
+```
+
 Cancel a request:
 ```py
-from rockets import Client
+from rockets import AsyncClient
 
 client = AsyncClient('myhost:8080')
 
@@ -158,7 +186,7 @@ request_task.cancel()
 
 Get progress updates for a request:
 ```py
-from rockets import Client
+from rockets import AsyncClient
 
 client = AsyncClient('myhost:8080')
 
@@ -185,7 +213,7 @@ for response in responses:
 
 Cancel a batch request:
 ```py
-from rockets import Client
+from rockets import AsyncClient
 
 client = AsyncClient('myhost:8080')
 
