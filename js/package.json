@@ -1,6 +1,6 @@
 {
   "name": "rockets-client",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/es5/index.js",
