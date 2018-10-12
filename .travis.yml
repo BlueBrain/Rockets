@@ -38,7 +38,7 @@ matrix:
       script:
         - yarn --cwd js test:cov
         - yarn --cwd js build
-      before_deploy:
+      after_success:
         - source ./scripts/set_npm_package_version.sh
       deploy:
         provider: script
