@@ -46,7 +46,7 @@ matrix:
         script: npm config set '//registry.npmjs.org/:_authToken' ${NPM_AUTH_TOKEN} && npm publish js
         skip_cleanup: true
         on:
-          condition: -z ${ROCKETS_CLIENT_VERSION+x}
+          condition: env(ROCKETS_CLIENT_VERSION) IS present
           branch: master
     # Python 3.5
     - language: python
