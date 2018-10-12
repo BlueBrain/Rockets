@@ -46,6 +46,7 @@
       "prerelease": "$(yarn bin)/npm-run-all -p test:cov build"
     },
     "skip": {
+      "changelog": true,
       "tag": true
     }
   },
