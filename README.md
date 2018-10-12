@@ -2,7 +2,7 @@
 
 > A library for easy HTTP and websockets messaging in C++ applications.
 
-[![Travis (.org) branch](https://img.shields.io/travis/BlueBrain/Rockets/master.svg?style=flat-square)](https://github.com/BlueBrain/Rockets)
+[![Travis CI](https://img.shields.io/travis/BlueBrain/Rockets/master.svg?style=flat-square)](https://travis-ci.org/BlueBrain/Rockets)
 
 
 # Table of Contents
@@ -52,6 +52,7 @@ ninja
 -----------
 Rockets provides client libraries for the following languages:
 
+* [Python](./python/README.md)
 * [JavaScript](./js/README.md)
 
 
