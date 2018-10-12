@@ -275,6 +275,7 @@ task.on('progress')
 If you're a contributor and wish to make a release of this package use:
 ```bash
 # Cut a minor release
+# A release can be: patch, minor, major;
 yarn release --release-as minor
 ```
 
