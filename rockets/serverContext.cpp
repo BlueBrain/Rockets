@@ -77,7 +77,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
         throw std::runtime_error("libwebsockets has no support for libuv");
 #endif
 
-    context = lws_create_context(&info);
+    context.reset(lws_create_context(&info));
     if (!context)
         throw std::runtime_error("libwebsocket init failed");
 
@@ -85,7 +85,7 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
     // create vhost explicitly to retrieve port number which is no longer filled
     try
     {
-        auto default_vhost = lws_create_vhost(context, &info);
+        auto default_vhost = lws_create_vhost(context.get(), &info);
         info.port = lws_get_vhost_listen_port(default_vhost);
     }
     catch (const unavailable_port_error&)
@@ -98,20 +98,15 @@ ServerContext::ServerContext(const std::string& uri, const std::string& name,
 #if LWS_LIBRARY_VERSION_NUMBER < 3000000
     if (uvLoopRunning)
     {
-        lws_uv_sigint_cfg(context, 0, nullptr);
+        lws_uv_sigint_cfg(context.get(), 0, nullptr);
 #if LWS_LIBRARY_VERSION_NUMBER < 2000000
-        lws_uv_initloop(context, uvLoop_, &signal_cb, 0);
+        lws_uv_initloop(context.get(), uvLoop_, &signal_cb, 0);
 #else
-        lws_uv_initloop(context, uvLoop_, 0);
+        lws_uv_initloop(context.get(), uvLoop_, 0);
 #endif
     }
 #endif
 #endif
-}
-
-ServerContext::~ServerContext()
-{
-    lws_context_destroy(context);
 }
 
 std::string ServerContext::getHostname() const
@@ -126,33 +121,33 @@ uint16_t ServerContext::getPort() const
 
 int ServerContext::getThreadCount() const
 {
-    return lws_get_count_threads(context);
+    return lws_get_count_threads(context.get());
 }
 
 void ServerContext::requestBroadcast()
 {
-    lws_callback_on_writable_all_protocol(context, &protocols[1]);
+    lws_callback_on_writable_all_protocol(context.get(), &protocols[1]);
 }
 
 bool ServerContext::service(const int tsi, const int timeout_ms)
 {
-    return lws_service_tsi(context, timeout_ms, tsi) >= 0;
+    return lws_service_tsi(context.get(), timeout_ms, tsi) >= 0;
 }
 
 void ServerContext::service(const int timeout_ms)
 {
-    lws_service(context, timeout_ms);
+    lws_service(context.get(), timeout_ms);
 }
 
 void ServerContext::service(PollDescriptors& pollDescriptors,
                             const SocketDescriptor fd, const int events)
 {
-    pollDescriptors.service(context, fd, events);
+    pollDescriptors.service(context.get(), fd, events);
 }
 
 void ServerContext::cancelService()
 {
-    lws_cancel_service(context);
+    lws_cancel_service(context.get());
 }
 
 void ServerContext::createWebsocketsProtocol(lws_callback_function* wsCallback,

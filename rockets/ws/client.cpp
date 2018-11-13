@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -29,6 +29,18 @@
 namespace
 {
 const char* wsProtocolNotFound = "unsupported websocket protocol";
+
+template <typename PromiseT>
+void tryToSetException(PromiseT& promise, std::exception_ptr exception)
+{
+    try
+    {
+        promise.set_exception(exception);
+    }
+    catch (const std::future_error&) // promise may already be satisfied
+    {
+    }
+}
 }
 
 namespace rockets
@@ -48,13 +60,7 @@ public:
 
     void tryToSetConnectionException()
     {
-        try
-        {
-            connectionPromise.set_exception(std::current_exception());
-        }
-        catch (const std::future_error&) // promise may already be set
-        {
-        }
+        tryToSetException(connectionPromise, std::current_exception());
     }
 
     PollDescriptors pollDescriptors;
@@ -155,7 +161,7 @@ static int callback_ws(lws* wsi, lws_callback_reasons reason, void* /*user*/,
         {
             auto msg = in ? std::string((char*)in, len) : wsProtocolNotFound;
             auto exception = std::make_exception_ptr(std::runtime_error(msg));
-            client->connectionPromise.set_exception(exception);
+            tryToSetException(client->connectionPromise, exception);
             break;
         }
 

@@ -66,6 +66,7 @@ set(ROCKETS_HEADERS
   serviceThreadPool.h
   unavailablePortError.h
   utils.h
+  wrappers.h
   http/channel.h
   http/connection.h
   http/connectionHandler.h

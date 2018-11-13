@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -23,6 +23,7 @@
 #include <rockets/http/types.h>
 #include <rockets/pollDescriptors.h>
 #include <rockets/utils.h>
+#include <rockets/wrappers.h>
 #include <rockets/ws/types.h>
 
 #include <libwebsockets.h>
@@ -44,8 +45,6 @@ public:
                   lws_callback_function* wsCallback, void* user,
                   void* uvLoop = nullptr);
 
-    ~ServerContext();
-
     std::string getHostname() const;
     uint16_t getPort() const;
     int getThreadCount() const;
@@ -59,11 +58,11 @@ public:
     void cancelService();
 
 private:
-    lws_context* context = nullptr;
     std::string interface;
     lws_context_creation_info info;
     std::vector<lws_protocols> protocols;
     std::string wsProtocolName;
+    LwsContextPtr context;
 
     void fillContextInfo(const std::string& uri,
                          const unsigned int threadCount);
