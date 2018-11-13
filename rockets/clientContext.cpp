@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -25,6 +25,10 @@
 
 #include <sstream>
 #include <string.h> // memset
+
+#if LWS_LIBRARY_VERSION_NUMBER >= 2003000
+#define CLIENT_CAN_DESTROY_VHOST 1
+#endif
 
 namespace
 {
@@ -89,15 +93,15 @@ ClientContext::ClientContext(lws_callback_function* callback, void* user)
 #if CLIENT_USE_EXPLICIT_VHOST
     info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 #endif
-    context = lws_create_context(&info);
-    if (!context)
-        throw std::runtime_error(contextInitFailure);
+    createContext();
     createVhost();
 }
 
-ClientContext::~ClientContext()
+void ClientContext::createContext()
 {
-    lws_context_destroy(context);
+    context.reset(lws_create_context(&info));
+    if (!context)
+        throw std::runtime_error(contextInitFailure);
 }
 
 void ClientContext::createVhost()
@@ -105,15 +109,17 @@ void ClientContext::createVhost()
 #if CLIENT_USE_EXPLICIT_VHOST
     if (vhost)
     {
+#if CLIENT_CAN_DESTROY_VHOST
         lws_vhost_destroy(vhost);
+#else // must recreate entire context
+        createContext();
+#endif
         vhost = nullptr;
     }
+
+    vhost = lws_create_vhost(context.get(), &info);
     if (!vhost)
-    {
-        vhost = lws_create_vhost(context, &info);
-        if (!vhost)
-            throw std::runtime_error(vhostInitFailure);
-    }
+        throw std::runtime_error(vhostInitFailure);
 #endif
 }
 
@@ -169,13 +175,13 @@ std::unique_ptr<ws::Connection> ClientContext::connect(
 
 void ClientContext::service(const int timeout_ms)
 {
-    lws_service(context, timeout_ms);
+    lws_service(context.get(), timeout_ms);
 }
 
 void ClientContext::service(PollDescriptors& pollDescriptors,
                             const SocketDescriptor fd, const int events)
 {
-    pollDescriptors.service(context, fd, events);
+    pollDescriptors.service(context.get(), fd, events);
 }
 
 lws_client_connect_info ClientContext::makeConnectInfo(const Uri& uri) const
@@ -183,7 +189,7 @@ lws_client_connect_info ClientContext::makeConnectInfo(const Uri& uri) const
     lws_client_connect_info c_info;
     memset(&c_info, 0, sizeof(c_info));
 
-    c_info.context = context;
+    c_info.context = context.get();
     c_info.ietf_version_or_minus_one = -1;
 
     c_info.address = uri.host.c_str();
@@ -191,7 +197,7 @@ lws_client_connect_info ClientContext::makeConnectInfo(const Uri& uri) const
     c_info.path = uri.path.c_str();
 
     c_info.host = c_info.address;
-    c_info.origin = lws_canonical_hostname(context);
+    c_info.origin = lws_canonical_hostname(context.get());
 
     return c_info;
 }
@@ -201,7 +207,7 @@ void ClientContext::disableProxy()
 #if CLIENT_USE_EXPLICIT_VHOST
     lws_set_proxy(vhost, ":0");
 #else
-    lws_set_proxy(context, ":0");
+    lws_set_proxy(context.get(), ":0");
 #endif
 }
 }

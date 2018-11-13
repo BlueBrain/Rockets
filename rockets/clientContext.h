@@ -1,5 +1,5 @@
-/* Copyright (c) 2017, EPFL/Blue Brain Project
- *                     Raphael.Dumusc@epfl.ch
+/* Copyright (c) 2017-2018, EPFL/Blue Brain Project
+ *                          Raphael.Dumusc@epfl.ch
  *
  * This file is part of Rockets <https://github.com/BlueBrain/Rockets>
  *
@@ -23,6 +23,7 @@
 #include <rockets/http/types.h>
 #include <rockets/pollDescriptors.h>
 #include <rockets/utils.h>
+#include <rockets/wrappers.h>
 #include <rockets/ws/types.h>
 
 #include <libwebsockets.h>
@@ -44,8 +45,6 @@ class ClientContext
 public:
     ClientContext(lws_callback_function* callback, void* user);
 
-    ~ClientContext();
-
     lws* startHttpRequest(http::Method method, const std::string& uri);
 
     std::unique_ptr<ws::Connection> connect(const std::string& uri,
@@ -56,15 +55,16 @@ public:
                  int events);
 
 private:
-    lws_context* context = nullptr;
     lws_context_creation_info info;
     std::string wsProtocolName{"default"};
     std::vector<lws_protocols> protocols;
+    LwsContextPtr context;
 #if CLIENT_USE_EXPLICIT_VHOST
     lws_vhost* vhost = nullptr;
 #endif
 
     lws_client_connect_info makeConnectInfo(const Uri& uri) const;
+    void createContext();
     void createVhost();
     void disableProxy();
 };

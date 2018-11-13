@@ -28,6 +28,8 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <libwebsockets.h>
+
 #define CLIENT_SUPPORTS_INEXISTANT_PROTOCOL_ERRORS \
     (LWS_LIBRARY_VERSION_NUMBER >= 2000000)
 
@@ -42,14 +44,17 @@ void connect(ws::Client& client, Server& server, bool skipCheck = false)
     auto future = client.connect(server.getURI(), wsProtocol);
     while (!is_ready(future))
     {
-        client.process(0);
+        client.process(10);
         if (server.getThreadCount() == 0)
-            server.process(0);
+            server.process(10);
     }
     if (skipCheck)
         future.get();
     else
         BOOST_REQUIRE_NO_THROW(future.get());
+
+    if (server.getThreadCount() > 0)
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
 }
 
 struct ScopedEnvironment
@@ -99,8 +104,8 @@ BOOST_AUTO_TEST_CASE(client_connection_to_inexistant_protocol)
     BOOST_REQUIRE(!is_ready(future));
     while (!is_ready(future))
     {
-        client.process(0);
-        server.process(0);
+        client.process(10);
+        server.process(10);
     }
     BOOST_CHECK_THROW(future.get(), std::runtime_error);
 }
@@ -157,7 +162,7 @@ struct Fixture
         {
             client1.process(5);
             if (server.getThreadCount() == 0)
-                server.process(0);
+                server.process(10);
         }
     }
 
@@ -168,7 +173,7 @@ struct Fixture
             if (client3)
                 client3->process(5);
             if (server.getThreadCount() == 0)
-                server.process(0);
+                server.process(10);
         }
     }
 
@@ -179,7 +184,7 @@ struct Fixture
             if (client3)
                 client3->process(5);
             if (server.getThreadCount() == 0)
-                server.process(0);
+                server.process(10);
         }
     }
 
@@ -193,7 +198,7 @@ struct Fixture
             client1.process(5);
             client2.process(5);
             if (server.getThreadCount() == 0)
-                server.process(0);
+                server.process(10);
         }
     }
 };

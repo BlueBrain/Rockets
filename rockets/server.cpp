@@ -276,7 +276,13 @@ static int callback_http(lws* wsi, const lws_callback_reasons reason,
         switch (reason)
         {
         case LWS_CALLBACK_HTTP:
-            connections.emplace(wsi, http::Connection{wsi, (const char*)in});
+            // connection "open" may occur multiple times (lws v2.0-stable)
+            if (!connections
+                     .emplace(wsi, http::Connection{wsi, (const char*)in})
+                     .second)
+            {
+                return -1;
+            }
             handler.handleNewRequest(connections.at(wsi));
             break;
         case LWS_CALLBACK_HTTP_BODY:
