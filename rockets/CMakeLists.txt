@@ -20,9 +20,7 @@ list(APPEND CPPCHECK_EXTRA_ARGS
   --suppress=*:${CMAKE_CURRENT_SOURCE_DIR}/json.hpp)
 
 # bug while checking json.hpp, --suppress does not remove the error exit code
-if(CPPCHECK_VERSION VERSION_LESS 1.78)
-  list(APPEND CPPCHECK_EXTRA_ARGS --error-exitcode=0)
-endif()
+list(APPEND CPPCHECK_EXTRA_ARGS --error-exitcode=0)
 
 set(ROCKETS_PUBLIC_HEADERS
   helpers.h
