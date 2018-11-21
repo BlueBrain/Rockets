@@ -37,6 +37,7 @@ set(ROCKETS_LICENSE LGPL)
 common_find_package(Boost SYSTEM COMPONENTS unit_test_framework)
 common_find_package(Libwebsockets SYSTEM)
 if(NOT Libwebsockets_FOUND) # Ubuntu package only has libwebsockets.pc
+  common_find_package_disable(Libwebsockets)
   common_find_package(libwebsockets SYSTEM REQUIRED)
   set(Libwebsockets_VERSION ${libwebsockets_VERSION})
 endif()
