@@ -73,6 +73,13 @@ void ConnectionHandler::handleData(Connection& connection, const char* data,
 
 void ConnectionHandler::prepareResponse(Connection& connection) const
 {
+#if LWS_LIBRARY_VERSION_NUMBER >= 3001000
+    // Since lws 3.1 LWS_CALLBACK_HTTP_BODY + LWS_CALLBACK_HTTP_BODY_COMPLETION
+    // happen even when the POST request has ContentLength 0. Return to avoid a
+    // logic exception because the response was already set in handleNewRequest.
+    if (!connection.canHaveHttpBody() && connection.isResponseSet())
+        return;
+#endif
     connection.setResponse(_generateResponse(connection));
     connection.requestWriteCallback();
 }
