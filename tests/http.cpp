@@ -249,7 +249,14 @@ BOOST_AUTO_TEST_CASE(listening_on_os_chosen_port)
 
 BOOST_AUTO_TEST_CASE(listening_on_unavailable_port_throws)
 {
-    BOOST_CHECK_THROW(Server(":80", ""), std::runtime_error);
+#ifndef __APPLE__
+    const auto port = ":80";
+#else
+    // ports < 1024 are no longer restricted since OSX 10.14 (Mojave)
+    Server server1;
+    const auto port = std::string(":") + std::to_string(server1.getPort());
+#endif
+    BOOST_CHECK_THROW(Server(port, ""), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(listening_on_localhost)
