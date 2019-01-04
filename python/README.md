@@ -4,6 +4,9 @@
 > communication contract over a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
 
 [![Travis CI](https://img.shields.io/travis/BlueBrain/Rockets/master.svg?style=flat-square)](https://travis-ci.org/BlueBrain/Rockets)
+[![Updates](https://pyup.io/repos/github/BlueBrain/Rockets/shield.svg)](https://pyup.io/repos/github/BlueBrain/Rockets/)
+[![Latest version](https://img.shields.io/pypi/v/rockets.svg)](https://pypi.org/project/rockets/)
+[![Python versions](https://img.shields.io/pypi/pyversions/rockets.svg)](https://pypi.org/project/rockets/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 
