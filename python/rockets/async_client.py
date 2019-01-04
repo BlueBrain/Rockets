@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,26 +18,28 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """Asynchronous client implementation for asyncio event loop processing of JSON-RPC messages."""
-
 import asyncio
 import json
 import sys
-
 from functools import reduce
+
 import websockets
 from jsonrpc.jsonrpc2 import JSONRPC20Request
 from rx import Observable
 
 from .notification import Notification
 from .request import Request
-from .request_error import INVALID_REQUEST, SOCKET_CLOSED_ERROR, RequestError
+from .request_error import INVALID_REQUEST
+from .request_error import RequestError
+from .request_error import SOCKET_CLOSED_ERROR
 from .request_progress import RequestProgress
 from .request_task import RequestTask
 from .response import Response
-from .utils import is_json_rpc_notification, is_json_rpc_response, is_progress_notification, \
-                   set_ws_protocol
+from .utils import is_json_rpc_notification
+from .utils import is_json_rpc_response
+from .utils import is_progress_notification
+from .utils import set_ws_protocol
 
 
 class AsyncClient:
@@ -59,7 +60,7 @@ class AsyncClient:
         """The address of the connected Rockets server."""
 
         if not subprotocols:
-            subprotocols = ['rockets']
+            subprotocols = ["rockets"]
         self._subprotocols = subprotocols
 
         self._ws = None
@@ -89,10 +90,13 @@ class AsyncClient:
         self._json_stream = self.ws_observable.filter(_json_filter).map(json.loads)
 
         def _notifications_filter(value):
-            return is_json_rpc_notification(value) and not is_progress_notification(value)
+            return is_json_rpc_notification(value) and not is_progress_notification(
+                value
+            )
 
-        self.notifications = self._json_stream.filter(_notifications_filter)\
-            .map(lambda x: Notification.from_json(json.dumps(x)))
+        self.notifications = self._json_stream.filter(_notifications_filter).map(
+            lambda x: Notification.from_json(json.dumps(x))
+        )
         """The rx observable to subscribe to notifications from the server."""
 
     def connected(self):
@@ -102,15 +106,16 @@ class AsyncClient:
         :return: true if the websocket is connected to the Rockets server.
         :rtype: bool
         """
-        return True if self._ws and self._ws.open else False
+        return bool(self._ws and self._ws.open)
 
     async def connect(self):
         """Connect this client to the Rockets server"""
         if self.connected():
             return
 
-        self._ws = await websockets.connect(self.url, subprotocols=self._subprotocols,
-                                            loop=self.loop)
+        self._ws = await websockets.connect(
+            self.url, subprotocols=self._subprotocols, loop=self.loop
+        )
 
     async def disconnect(self):
         """Disconnect this client from the Rockets server."""
@@ -162,7 +167,7 @@ class AsyncClient:
             await response_future
             return response_future.result()
         except asyncio.CancelledError:
-            await self.notify('cancel', {'id': request_id})
+            await self.notify("cancel", {"id": request_id})
 
     async def batch(self, requests):
         """
@@ -188,8 +193,10 @@ class AsyncClient:
                 request_ids.append(request.request_id())
 
         try:
+
             def _data(x):
                 return x.data
+
             request = Request.from_data(list(map(_data, requests)))
 
             response_future = self.loop.create_future()
@@ -203,7 +210,7 @@ class AsyncClient:
             return response_future.result()
         except asyncio.CancelledError:
             for request_id in request_ids:
-                await self.notify('cancel', {'id': request_id})
+                await self.notify("cancel", {"id": request_id})
 
     def async_request(self, method, params=None):
         """
@@ -249,7 +256,7 @@ class AsyncClient:
 
     def _setup_response_filter(self, response_future, request_id):
         def _response_filter(value):
-            return is_json_rpc_response(value) and value['id'] == request_id
+            return is_json_rpc_response(value) and value["id"] == request_id
 
         def _to_response(value):
             response = Response.from_json(json.dumps(value))
@@ -259,28 +266,29 @@ class AsyncClient:
 
         def _on_next(value):
             if not response_future.done():
-                if isinstance(value, dict) and 'code' in value:
+                if isinstance(value, dict) and "code" in value:
                     response_future.set_exception(RequestError(**value))
                 else:
                     response_future.set_result(value)
 
         def _on_completed():
+
             if not response_future.done():
                 response_future.set_exception(SOCKET_CLOSED_ERROR)
 
-        self._json_stream \
-            .filter(_response_filter) \
-            .take(1) \
-            .map(_to_response) \
-            .subscribe(on_next=_on_next,
-                       on_completed=_on_completed)
+        self._json_stream.filter(_response_filter).take(1).map(_to_response).subscribe(
+            on_next=_on_next, on_completed=_on_completed
+        )
 
     def _setup_batch_response_filter(self, response_future, request_ids):
         def _response_filter(value):
             if not isinstance(value, list):
                 return False
             for response in value:
-                if not is_json_rpc_response(response) or response['id'] not in request_ids:
+                if (
+                    not is_json_rpc_response(response)
+                    or response["id"] not in request_ids
+                ):
                     return False  # pragma: no cover
             return True
 
@@ -296,27 +304,29 @@ class AsyncClient:
             if not response_future.done():
                 response_future.set_exception(SOCKET_CLOSED_ERROR)
 
-        self._json_stream \
-            .filter(_response_filter) \
-            .take(1) \
-            .map(_to_response) \
-            .subscribe(on_next=_on_next,
-                       on_completed=_on_completed)
+        self._json_stream.filter(_response_filter).take(1).map(_to_response).subscribe(
+            on_next=_on_next, on_completed=_on_completed
+        )
 
     def _setup_progress_filter(self, response_future, request_id):
         task = asyncio.Task.current_task()
         if task and isinstance(task, RequestTask):
+
             def _progress_filter(value):
-                return is_progress_notification(value) and value['params']['id'] == request_id
+                return (
+                    is_progress_notification(value)
+                    and value["params"]["id"] == request_id
+                )
 
             def _to_progress(value):
                 progress = Request.from_data(value).params
-                return RequestProgress(progress['operation'], progress['amount'])
+                return RequestProgress(progress["operation"], progress["amount"])
 
-            progress_observable = self._json_stream \
-                .filter(_progress_filter) \
-                .map(_to_progress) \
+            progress_observable = (
+                self._json_stream.filter(_progress_filter)
+                .map(_to_progress)
                 .subscribe(task._call_progress_callbacks)  # pylint: disable=W0212
+            )
 
             def _done_callback(future):  # pylint: disable=W0613
                 progress_observable.dispose()
@@ -327,19 +337,24 @@ class AsyncClient:
         task = asyncio.Task.current_task()
         items = dict()
         if task and isinstance(task, RequestTask):
+
             def _progress_filter(value):
-                return is_progress_notification(value) and value['params']['id'] in request_ids
+                return (
+                    is_progress_notification(value)
+                    and value["params"]["id"] in request_ids
+                )
 
             def _to_progress(value):
                 progress = Request.from_data(value).params
-                items[progress['id']] = progress['amount']
+                items[progress["id"]] = progress["amount"]
                 total = reduce((lambda x, value: x + value), items.values())
-                return RequestProgress('Batch request', total / len(request_ids))
+                return RequestProgress("Batch request", total / len(request_ids))
 
-            progress_observable = self._json_stream \
-                .filter(_progress_filter) \
-                .map(_to_progress) \
+            progress_observable = (
+                self._json_stream.filter(_progress_filter)
+                .map(_to_progress)
                 .subscribe(task._call_progress_callbacks)  # pylint: disable=W0212
+            )
 
             def _done_callback(future):  # pylint: disable=W0613
                 progress_observable.dispose()

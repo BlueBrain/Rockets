@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,7 +18,6 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """Reports the error code and message of a request that has failed."""
 
 
@@ -34,5 +32,5 @@ class RequestError(Exception):
         self.data = data
 
 
-SOCKET_CLOSED_ERROR = RequestError(-30100, 'Socket connection closed')
-INVALID_REQUEST = RequestError(-32600, 'Invalid Request')
+SOCKET_CLOSED_ERROR = RequestError(-30100, "Socket connection closed")
+INVALID_REQUEST = RequestError(-32600, "Invalid Request")

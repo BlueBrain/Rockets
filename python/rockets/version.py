@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,11 +18,11 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """The version of the rockets package"""
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound
+from pkg_resources import get_distribution
 
 try:
-    VERSION = get_distribution('rockets').version
+    VERSION = get_distribution("rockets").version
 except DistributionNotFound:  # pragma: no cover
-    VERSION = 'rockets-local'
+    VERSION = "rockets-local"

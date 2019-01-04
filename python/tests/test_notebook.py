@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,28 +18,36 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 import asyncio
+from threading import Event
+from threading import Thread
+
 import websockets
 from jsonrpcserver.aio import methods
+from nose.tools import assert_equal
+from nose.tools import assert_false
+from nose.tools import assert_true
+from nose.tools import raises
 
-from threading import Thread, Event
-from nose.tools import assert_true, assert_false, assert_equal, raises
 import rockets
 
 got_message = None
+
 
 @methods.add
 async def hello():
     pass
 
+
 @methods.add
 async def ping():
-    return 'pong'
+    return "pong"
+
 
 @methods.add
 async def double(value):
-    return value*2
+    return value * 2
+
 
 async def server_handle(websocket, path):
     request = await websocket.recv()
@@ -51,13 +58,13 @@ async def server_handle(websocket, path):
     got_message.set_result(True)
 
 
-class TestClass():
+class TestClass:
     def _run_server(self):
         asyncio.set_event_loop(self.server_loop)
-        start_server = websockets.serve(server_handle, 'localhost')
+        start_server = websockets.serve(server_handle, "localhost")
         server = self.server_loop.run_until_complete(start_server)
 
-        self.server_url = 'localhost:'+str(server.sockets[0].getsockname()[1])
+        self.server_url = "localhost:" + str(server.sockets[0].getsockname()[1])
         self.server_ready.set()
 
         self.got_message = self.server_loop.create_future()
@@ -77,61 +84,64 @@ class TestClass():
     def test_notify(self):
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.Client('ws://'+self.server_url)
-            client.notify('hello')
+            client = rockets.Client("ws://" + self.server_url)
+            client.notify("hello")
 
         asyncio.get_event_loop().run_until_complete(run_notebook_cell())
 
     def test_request(self):
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.Client('ws://'+self.server_url)
-            assert_equal(client.request('ping'), 'pong')
+            client = rockets.Client("ws://" + self.server_url)
+            assert_equal(client.request("ping"), "pong")
 
         asyncio.get_event_loop().run_until_complete(run_notebook_cell())
 
     def test_invalid_environment(self):
         self.server_ready.wait()
-        client = rockets.Client('ws://'+self.server_url)
+        client = rockets.Client("ws://" + self.server_url)
 
         async def run_notebook_cell(client):
-            try:
-                client.request('ping')
-                return False
-            except RuntimeError:
-                return True
+            client.request("ping")
 
-        called = asyncio.get_event_loop().run_until_complete(run_notebook_cell(client))
-        assert_true(called)
+        try:
+            asyncio.get_event_loop().run_until_complete(run_notebook_cell(client))
+            got_exception = False
+        except RuntimeError:
+            got_exception = True
+
+        assert_true(got_exception)
 
         # unblock server thread
-        client.notify('hello')
+        client.notify("hello")
 
     def test_async_request(self):
         called = asyncio.get_event_loop().create_future()
+
         def _on_done(the_task):
             called.set_result(the_task.result())
 
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.AsyncClient('ws://'+self.server_url)
-            task = client.async_request('ping')
+            client = rockets.AsyncClient("ws://" + self.server_url)
+            task = client.async_request("ping")
             task.add_done_callback(_on_done)
             await task
 
         asyncio.get_event_loop().run_until_complete(run_notebook_cell())
-        assert_equal(asyncio.get_event_loop().run_until_complete(called), 'pong')
+        assert_equal(asyncio.get_event_loop().run_until_complete(called), "pong")
 
     def test_async_batch(self):
         called = asyncio.get_event_loop().create_future()
+
         def _on_done(the_task):
             called.set_result(the_task.result())
 
         async def run_notebook_cell():
             self.server_ready.wait()
-            client = rockets.AsyncClient('ws://'+self.server_url)
-            request_1 = rockets.Request('double', [2])
-            request_2 = rockets.Request('double', [4])
+            client = rockets.AsyncClient("ws://" + self.server_url)
+            request_1 = rockets.Request("double", [2])
+            request_2 = rockets.Request("double", [4])
             task = client.async_batch([request_1, request_2])
             task.add_done_callback(_on_done)
             await task
@@ -143,6 +153,7 @@ class TestClass():
         assert_equal(results, [4, 8])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import nose
+
     nose.run(defaultTest=__name__)

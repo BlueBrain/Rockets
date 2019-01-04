@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,10 +18,9 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """A JSON-RPC 2.0 request"""
-
 from jsonrpc.jsonrpc2 import JSONRPC20Request
+
 from .utils import random_string
 
 
@@ -32,8 +30,12 @@ class Request(JSONRPC20Request):
     _id_generator = random_string()
 
     def __init__(self, method, params=None):
-        super().__init__(method=method, params=params, _id=next(Request._id_generator),
-                         is_notification=False)
+        super().__init__(
+            method=method,
+            params=params,
+            _id=next(Request._id_generator),
+            is_notification=False,
+        )
 
     def request_id(self):
         """Return the request ID"""
