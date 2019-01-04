@@ -26,4 +26,5 @@ endif()
 
 set(TEST_LIBRARIES ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} Rockets)
 
+list(APPEND LCOV_EXCLUDE '${PROJECT_SOURCE_DIR}/rockets/json.hpp')
 include(CommonCTest)

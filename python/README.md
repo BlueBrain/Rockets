@@ -31,7 +31,7 @@ pip install rockets
 ---------
 
 #### `Client` vs. `AsyncClient`
-Rockets provides to types of clients to support asychronous and synchronous usage.
+Rockets provides two types of clients to support asychronous and synchronous usage.
 
 The `AsyncClient` exposes all of its functionality as `async` functions, hence an `asyncio`
 [event loop](https://docs.python.org/3/library/asyncio-eventloop.html) is needed to complete pending

@@ -9,34 +9,36 @@
 
 * [Features](#features)
 * [Build](#build)
-* [Clients](#clients)
+* [Usage](#usage)
 * [Contribute](#contribute)
 
 
-### Features
-------------
-It provides the following features:
+## Features
+`Rockets` provides the following features:
 
-* HTTP server with integrated websockets support
-* HTTP client for making simple asynchronous requests (with or without payload)
-* Websockets client for sending, broadcasting and receiving text and binary
-  messages
+* [HTTP server](rockets/server.h) with integrated websockets support
+* [HTTP client](rockets/http/client.h) for making simple asynchronous requests (with or without payload)
+* [Websockets client](rockets/ws/client.h) for sending, broadcasting and receiving text and binary messages
+* Support for [JSON-RPC](https://www.jsonrpc.org) as a communication protocol over HTTP and websockets. `Rockets` extends the [2.0 specification](https://www.jsonrpc.org/specification) by providing support for [Cancellation and Progress notifications](rockets/jsonrpc/cancellableReceiver.h) of pending requests.
+  * [Server](rockets/jsonrpc/server.h)
+  * [C++ client](rockets/jsonrpc/client.h)
+  * [Javascript client](js/README.md)
+  * [Python client](python/README.md)
+* Event loop integration for [Qt](rockets/qt) and `libuv` through the appropriate `Server` constructor
 
 
-### Build
----------
-Rockets is a cross-platform library designed to run on any modern operating
-system, including all Unix variants. It requires a C++11 compiler and uses CMake
-to create a platform specific build environment. The following platforms and
-build environments are tested:
+## Build
+`Rockets` is a cross-platform library designed to run on any modern operating system, including all Unix variants.
+It requires a C++11 compiler and uses CMake to create a platform specific build environment.
+The following platforms and build environments are tested:
 
-* Linux: Ubuntu 16.04, RHEL 6.8
-* Mac OS X: 10.9
+* Linux: Ubuntu 16.04, 18.04
+* Mac OS X: 10.9 - 10.14
 
-Rockets requires the following external, pre-installed dependencies:
+`Rockets` requires the following external, pre-installed dependencies:
 
-* libwebsockets
-* Boost (for unit tests)
+* [libwebsockets](https://libwebsockets.org/)
+* [Boost.test](https://www.boost.org/doc/libs/1_69_0/libs/test/doc/html/index.html) (for unit tests)
 
 Building from source is as simple as:
 ```shell
@@ -48,16 +50,56 @@ ninja
 ```
 
 
-### Clients
------------
-Rockets provides client libraries for the following languages:
+## Usage
 
-* [Python](./python/README.md)
-* [JavaScript](./js/README.md)
+### Hello world REST server
+```cpp
+#include <rockets/server.h>
+#include <iostream>
+
+int main(int , char** )
+{
+    rockets::Server server;
+    std::cout << "Rockets REST server running on " << server.getURI() << std::endl;
+
+    server.handle(rockets::http::Method::GET, "hello", [](auto) {
+        return rockets::http::make_ready_response(rockets::http::Code::OK, "world");
+    });
+    for(;;)
+        server.process(100);
+    return 0;
+}
+```
+
+### Hello world websockets server
+```cpp
+#include <rockets/server.h>
+#include <iostream>
+
+int main(int , char** )
+{
+    rockets::Server server("", "myws");
+    std::cout << "Rockets websockets server running on " << server.getURI() << std::endl;
+
+    server.handleText([](const auto& request) {
+        return "server echo: " + request.message;
+    });
+    for(;;)
+        server.process(100);
+    return 0;
+}
+```
+
+### Production REST server example
+
+For a more elaborate use of a `Rockets` REST server, check out the [RestServer](https://github.com/BlueBrain/Tide/blob/master/tide/master/rest/RestServer.h) of [Tide](https://github.com/BlueBrain/Tide).
+
+### Production websockets server example
+
+For a more elaborate use of a `Rockets` websockets server, check out the [RocketsPlugin](https://github.com/BlueBrain/Brayns/blob/master/plugins/Rockets/RocketsPlugin.cpp) of [Brayns](https://github.com/BlueBrain/Brayns).
 
 
-### Contribute
---------------
+## Contribute
 Follow the next guidelines when making a contribution:
 
 * Install our [pre-commit](https://pre-commit.com/#install) hooks with `pre-commit install` prior the first commit
