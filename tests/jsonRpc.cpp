@@ -112,7 +112,7 @@ const std::string invalidJsonResult{
     R"({
     "error": {
         "code": -32700,
-        "data": "[json.exception.parse_error.101] parse error at 1: syntax error - invalid literal; last read: 'Z'",
+        "data": "[json.exception.parse_error.101] parse error at line 1, column 1: syntax error while parsing value - invalid literal; last read: 'Z'",
         "message": "Parse error"
     },
     "id": null,
@@ -123,7 +123,7 @@ const std::string invalidJsonArrayResult{
     R"({
     "error": {
         "code": -32700,
-        "data": "[json.exception.parse_error.101] parse error at 10: syntax error - unexpected ':'; expected ']'",
+        "data": "[json.exception.parse_error.101] parse error at line 1, column 10: syntax error while parsing array - unexpected ':'; expected ']'",
         "message": "Parse error"
     },
     "id": null,
@@ -230,7 +230,7 @@ const std::string invalidBatch3RequestResult{
         "jsonrpc": "2.0"
     }
 ])"};
-}
+} // namespace
 
 using namespace rockets;
 
