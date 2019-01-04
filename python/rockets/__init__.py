@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,9 +18,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """A small client for Rockets using JSON-RPC as communication contract over a WebSocket."""
-
 from .async_client import AsyncClient
 from .client import Client
 from .notification import Notification
@@ -32,5 +29,13 @@ from .request_task import RequestTask
 from .response import Response
 from .version import VERSION as __version__
 
-__all__ = ['AsyncClient', 'Client', 'Notification', 'Request', 'RequestError', 'RequestProgress',
-           'RequestTask', 'Response']
+__all__ = [
+    "AsyncClient",
+    "Client",
+    "Notification",
+    "Request",
+    "RequestError",
+    "RequestProgress",
+    "RequestTask",
+    "Response",
+]

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,9 +18,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """A JSON-RPC 2.0 notification"""
-
 from jsonrpc.jsonrpc2 import JSONRPC20Response
 
 
@@ -37,6 +34,6 @@ class Response(JSONRPC20Response):
     @classmethod
     def from_data(cls, data):
         """Create Response from dict"""
-        data['_id'] = data['id']
+        data["_id"] = data["id"]
         response = Response(**data)
         return response

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
 #
@@ -19,16 +18,15 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # All rights reserved. Do not distribute without further notice.
-
 """Utils for the client"""
-
 from random import choice
-from string import ascii_lowercase, digits
+from string import ascii_lowercase
+from string import digits
 
-HTTP = 'http://'
-HTTPS = 'https://'
-WS = 'ws://'
-WSS = 'wss://'
+HTTP = "http://"
+HTTPS = "https://"
+WS = "ws://"
+WSS = "wss://"
 
 
 def set_ws_protocol(url):
@@ -50,11 +48,12 @@ def set_ws_protocol(url):
 
 def copydoc(fromfunc, sep="\n"):
     """
-    Decorator: Copy the docstring of `fromfunc`
+    Copy the docstring of `fromfunc`
 
-    :return:
-    :rtype:
+    :return: Decorator to use on any func to copy the docstring from `fromfunc`
+    :rtype: obj
     """
+
     def _decorator(func):
         sourcedoc = fromfunc.__doc__
         if func.__doc__:  # pragma: no cover
@@ -62,6 +61,7 @@ def copydoc(fromfunc, sep="\n"):
         else:
             func.__doc__ = sourcedoc
         return func
+
     return _decorator
 
 
@@ -83,15 +83,20 @@ def random_string(length=8, chars=digits + ascii_lowercase):
 
 def is_json_rpc_response(value):
     """Check if the given value is valid JSON-RPC response."""
-    return isinstance(value, dict) and 'id' in value
+    return isinstance(value, dict) and "id" in value
 
 
 def is_json_rpc_notification(value):
     """Check if the given value is valid JSON-RPC notification."""
-    return isinstance(value, dict) and 'method' in value and 'id' not in value
+    return isinstance(value, dict) and "method" in value and "id" not in value
 
 
 def is_progress_notification(value):
     """Check if the given value is valid Rockets progress notification."""
-    return isinstance(value, dict) and 'method' in value and value['method'] == 'progress' and \
-        'params' in value and 'id' in value['params']
+    return (
+        isinstance(value, dict)
+        and "method" in value
+        and value["method"] == "progress"
+        and "params" in value
+        and "id" in value["params"]
+    )
