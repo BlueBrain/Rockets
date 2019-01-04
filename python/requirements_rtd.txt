@@ -18,6 +18,6 @@
 # All rights reserved. Do not distribute without further notice.
 
 json-rpc~=1.11.1
-nbsphinx~=0.3.3
+nbsphinx~=0.4.1
 rx~=1.6.1
-websockets~=6.0
+websockets~=7.0
