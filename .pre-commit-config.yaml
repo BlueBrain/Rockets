@@ -1,0 +1,13 @@
+repos:
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v1.3.4
+    hooks:
+    -   id: reorder-python-imports
+-   repo: https://github.com/ambv/black
+    rev: 18.9b0
+    hooks:
+    - id: black
+-   repo: git://github.com/tribal-tec/pre-commit-clang-format
+    rev: 5d64714207462c7ab063560e3f61ca00adfe5e06
+    hooks:
+    -   id: clang-format

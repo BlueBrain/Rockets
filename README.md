@@ -60,5 +60,6 @@ Rockets provides client libraries for the following languages:
 --------------
 Follow the next guidelines when making a contribution:
 
+* Install our [pre-commit](https://pre-commit.com/#install) hooks with `pre-commit install` prior the first commit
 * Use [Conventional Commits](https://www.conventionalcommits.org) spec whenever making a commit
 * Keep PRs to a single feature or fix
