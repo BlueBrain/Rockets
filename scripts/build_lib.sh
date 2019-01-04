@@ -1,13 +1,12 @@
 #!/bin/bash
 set -e
 
-export CPATH=$(brew --prefix openssl)/include
+export PKG_CONFIG_PATH=$(brew --prefix openssl)/lib/pkgconfig
 
 mkdir $BUILD_TYPE
 cd $BUILD_TYPE
 
 cmake -GNinja \
-    -DCLONE_SUBPROJECTS=ON \
     -DCMAKE_INSTALL_PREFIX=$PWD/install \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     ..

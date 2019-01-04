@@ -60,7 +60,7 @@ private:
     {
     }
 
-    size_t _id;
+    const size_t _id;
     std::future<ResponseT> _future;
     NotifyFunc _notify;
 };

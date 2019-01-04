@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2018, EPFL/Blue Brain Project
+# Copyright (c) 2017-2019, EPFL/Blue Brain Project
 #                          Raphael.Dumusc@epfl.ch
 #
 # This file is part of Rockets <https://github.com/BlueBrain/Rockets>
@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(Rockets VERSION 0.1.0)
+project(Rockets VERSION 1.0.0)
 set(Rockets_VERSION_ABI 1)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake/common)
@@ -28,6 +28,10 @@ endif()
 set(ROCKETS_DEB_DEPENDS libboost-test-dev libwebsockets-dev libuv1-dev)
 set(ROCKETS_PORT_DEPENDS libwebsockets)
 
+# disable noisy warnings from ChoosePython
+set(CHOOSE_PYTHON_DONE ON)
+include(FindBoostConfig)
+
 include(Common)
 
 set(ROCKETS_DESCRIPTION "Rockets - REST and websockets C++ library")
@@ -35,6 +39,9 @@ set(ROCKETS_MAINTAINER "Blue Brain Project <bbp-open-source@googlegroups.com>")
 set(ROCKETS_LICENSE LGPL)
 
 common_find_package(Boost SYSTEM COMPONENTS unit_test_framework)
+if(APPLE)
+  common_find_package(OpenSSL REQUIRED) # libwebsockets depends on that
+endif()
 common_find_package(Libwebsockets SYSTEM)
 if(NOT Libwebsockets_FOUND) # Ubuntu package only has libwebsockets.pc
   common_find_package_disable(Libwebsockets)

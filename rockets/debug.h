@@ -117,7 +117,7 @@ inline std::string to_string(const lws_callback_reasons reason)
 #endif
 #endif
 #endif
-    default: return std::string("UNKNOW (") + std::to_string((int)reason) + ")";
+    default: return std::string("UNKNOWN (") + std::to_string((int)reason) + ")";
     }
     // clang-format on
 }
