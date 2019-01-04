@@ -20,4 +20,4 @@
 json-rpc~=1.11.1
 nbsphinx~=0.3.3
 rx~=1.6.1
-websockets~=6.0
+websockets==7.0
