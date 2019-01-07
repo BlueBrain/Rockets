@@ -49,7 +49,7 @@ void HttpCommunicator::sendText(std::string message)
     // http::Client (which aborts pending requests, calling the error callback).
     const auto& cb = callback;
     client.request(url, http::Method::POST, std::move(message),
-                   [cb](http::Response response) {
+                   [cb](http::Response&& response) {
                        if (cb)
                            cb(ws::Request{std::move(response.body)});
                    },

@@ -3,6 +3,7 @@
 > A library for easy HTTP and websockets messaging in C++ applications.
 
 [![Travis CI](https://img.shields.io/travis/BlueBrain/Rockets/master.svg?style=flat-square)](https://travis-ci.org/BlueBrain/Rockets)
+[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/BlueBrain/Rockets.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/BlueBrain/Rockets/context:cpp)
 
 
 # Table of Contents

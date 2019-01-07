@@ -132,7 +132,7 @@ std::future<Response> Client::request(const std::string& uri,
                                       const Method method, std::string body)
 {
     auto promise = std::make_shared<std::promise<Response>>();
-    auto callback = [promise](Response response) {
+    auto callback = [promise](Response&& response) {
         promise->set_value(std::move(response));
     };
     auto errorCallback = [promise](std::string e) {
