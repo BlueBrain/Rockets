@@ -1,0 +1,9 @@
+extraction:
+  cpp:
+    prepare:
+      packages:
+        - libwebsockets-dev
+        - libuv1-dev
+  python:
+    python_setup:
+      version: 3

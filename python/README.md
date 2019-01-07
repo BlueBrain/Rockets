@@ -8,6 +8,7 @@
 [![Latest version](https://img.shields.io/pypi/v/rockets.svg)](https://pypi.org/project/rockets/)
 [![Python versions](https://img.shields.io/pypi/pyversions/rockets.svg)](https://pypi.org/project/rockets/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/BlueBrain/Rockets.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/BlueBrain/Rockets/context:python)
 
 
 # Table of Contents

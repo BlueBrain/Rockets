@@ -80,7 +80,7 @@ public:
                                   const Params& params)
     {
         auto promise = std::make_shared<std::promise<RetVal>>();
-        auto callback = [promise](Response response) {
+        auto callback = [promise](const Response& response) {
             if (response.isError())
                 promise->set_exception(
                     std::make_exception_ptr(response_error(response.error)));
@@ -114,7 +114,7 @@ public:
     ClientRequest<RetVal> request(const std::string& method)
     {
         auto promise = std::make_shared<std::promise<RetVal>>();
-        auto callback = [promise](Response response) {
+        auto callback = [promise](const Response& response) {
             if (response.isError())
                 promise->set_exception(
                     std::make_exception_ptr(response_error(response.error)));

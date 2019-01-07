@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#pragma once
+
 #include "receiverImpl.h"
 #include "utils.h"
 
@@ -50,7 +52,7 @@ public:
         }
 
         const auto& func = _methods[method];
-        func(request, [respond, requestID](const Response rep) {
+        func(request, [respond, requestID](const Response& rep) {
             // No reply for valid "notifications" (requests without an "id")
             if (requestID.is_null())
                 respond(json());

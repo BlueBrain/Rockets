@@ -105,7 +105,7 @@ ClientRequest<Response> Requester::request(const std::string& method,
                                            const std::string& params)
 {
     auto promise = std::make_shared<std::promise<Response>>();
-    auto callback = [promise](Response response) {
+    auto callback = [promise](Response&& response) {
         promise->set_value(std::move(response));
     };
     return {request(method, params, callback), promise->get_future(),

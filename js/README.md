@@ -3,6 +3,7 @@
 > A small client for [Rockets](../README.md) using [JSON RPC](https://www.jsonrpc.org) as communication contract over a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
 
 [![Travis CI](https://img.shields.io/travis/BlueBrain/Rockets/master.svg?style=flat-square)](https://travis-ci.org/BlueBrain/Rockets)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/BlueBrain/Rockets.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/BlueBrain/Rockets/context:javascript)
 
 
 # Table of Contents
