@@ -25,6 +25,6 @@ coverage~=4.5.1
 nosexcover~=1.0.11
 tox~=3.1.2
 Sphinx~=1.7.6
-sphinx_rtd_theme~=0.4.0
+sphinx_rtd_theme==0.4.2
 pandoc~=1.0.2
 jsonrpcserver~=3.5.6
