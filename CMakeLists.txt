@@ -48,9 +48,12 @@ if(NOT Libwebsockets_FOUND) # Ubuntu package only has libwebsockets.pc
   common_find_package(libwebsockets SYSTEM REQUIRED)
   set(Libwebsockets_VERSION ${libwebsockets_VERSION})
 endif()
-common_find_package(Threads REQUIRED)
 common_find_package_post()
 
+# Prefer pthread and add '-pthread' to import target
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 set(ROCKETS_DEPENDENT_LIBRARIES Threads)
 
 option(ROCKETS_BUILD_APPLICATIONS "Build example applications" ON)
