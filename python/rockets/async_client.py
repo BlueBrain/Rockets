@@ -114,7 +114,11 @@ class AsyncClient:
             return
 
         self._ws = await websockets.connect(
-            self.url, subprotocols=self._subprotocols, max_size=None, loop=self.loop
+            self.url,
+            subprotocols=self._subprotocols,
+            max_size=None,
+            ping_timeout=None,
+            loop=self.loop,
         )
 
     async def disconnect(self):
