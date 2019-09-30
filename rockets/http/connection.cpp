@@ -32,7 +32,7 @@ const std::logic_error headers_not_sent_error{
 const std::logic_error body_already_sent_error{
     "response body has already been sent!"};
 const std::logic_error body_empty_error{"response body is empty!"};
-}
+} // namespace
 
 namespace rockets
 {
@@ -40,7 +40,8 @@ namespace http
 {
 Connection::Connection(lws* wsi, const char* path)
     : channel{wsi}
-    , request{channel.readMethod(), path, channel.readOrigin(),
+    , request{channel.readMethod(),          path,
+              channel.readOrigin(),          channel.readHost(),
               channel.readQueryParameters(), ""}
     , contentLength{channel.readContentLength()}
     , corsHeaders(channel.readCorsRequestHeaders())
@@ -181,5 +182,5 @@ void Connection::_finalizeResponse()
     }
     responseFinalized = true;
 }
-}
-}
+} // namespace http
+} // namespace rockets

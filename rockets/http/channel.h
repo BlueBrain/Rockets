@@ -47,6 +47,7 @@ public:
     size_t readContentLength() const;
 
     /* Server */
+    std::string readHost() const;
     Method readMethod() const;
     std::string readOrigin() const;
     std::map<std::string, std::string> readQueryParameters() const;
@@ -72,7 +73,7 @@ private:
     void _writeResponseBody(const std::string& message);
     bool _write(const std::string& message, lws_write_protocol protocol);
 };
-}
-}
+} // namespace http
+} // namespace rockets
 
 #endif
