@@ -57,10 +57,11 @@ struct Request
     Method method;
     std::string path;
     std::string origin;
+    std::string host;
     std::map<std::string, std::string> query;
     std::string body;
 };
-}
-}
+} // namespace http
+} // namespace rockets
 
 #endif

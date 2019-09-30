@@ -222,6 +222,6 @@ private:
     void _processSocket(SocketDescriptor fd, int events) final;
     void _process(int timeout_ms) final;
 };
-}
+} // namespace rockets
 
 #endif

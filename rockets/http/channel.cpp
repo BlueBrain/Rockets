@@ -58,6 +58,11 @@ Channel::Channel(lws* wsi_)
 {
 }
 
+std::string Channel::readHost() const
+{
+    return _readHeader(WSI_TOKEN_HOST);
+}
+
 Method Channel::readMethod() const
 {
     if (lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI) != 0)
@@ -280,5 +285,5 @@ bool Channel::_write(const std::string& message, lws_write_protocol protocol)
     auto data = (unsigned char*)(&buffer.data()[LWS_PRE]);
     return lws_write(wsi, data, message.size(), protocol) >= 0;
 }
-}
-}
+} // namespace http
+} // namespace rockets
