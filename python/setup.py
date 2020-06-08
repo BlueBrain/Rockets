@@ -3,6 +3,7 @@
 
 # Copyright (c) 2018, Blue Brain Project
 #                     Daniel Nachbaur <daniel.nachbaur@epfl.ch>
+#                     Pawel Podhajski <pawel.podhajski@epfl.ch>
 #
 # This file is part of Rockets <https://github.com/BlueBrain/Rockets>
 #
@@ -23,25 +24,20 @@
 """setup.py"""
 import os
 from setuptools import setup
-
-try: # for pip >= 10
-    from pip._internal.req import parse_requirements
-    from pip._internal.download import PipSession
-except ImportError: # for pip <= 9.0.3
-    from pip.req import parse_requirements
-    from pip.download import PipSession
-from optparse import Option
+import pathlib
+import pkg_resources
 
 BASEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def parse_reqs(reqs_file):
     ''' parse the requirements '''
-    options = Option("--workaround")
-    options.skip_requirements_regex = None
-    options.isolated_mode = True
-    install_reqs = parse_requirements(reqs_file, options=options, session=PipSession())
-    return [str(ir.req) for ir in install_reqs]
+    install_reqs = list()
+    with pathlib.Path(reqs_file).open() as requirements_txt:
+        install_reqs = [str(requirement)
+                        for requirement
+                        in pkg_resources.parse_requirements(requirements_txt)]
+    return install_reqs
 
 
 REQS = parse_reqs(os.path.join(BASEDIR, "requirements.txt"))
