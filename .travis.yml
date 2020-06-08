@@ -74,7 +74,7 @@ matrix:
         provider: pypi
         user: bbp.opensource
         password:
-          secure: "LvvTFmcx2BoMjv22oI2vIHZ/pT8IbSEjBx0bMA+wcBJBbwX2LkGIwEX3r/U7PlnSL/E0blSVyWEkmu6jClYz7cd6VVQbEm0J2R3SPXo7BROt01pBbj6oHqLVr+wGf0gT7BVfKSc3m7NsjdKa3xpZyal9+WfzuE0ngyG8MOnyoVzyZqiBlKHHWeTiHgTiwhps+6rTvtzHnCSeI7pf2uWBDZtTeshUXDv1zWMOsvSlhR3KJzpxfw7sEMDMb0/GcNUDdRGb8+eHhVbjSGJiDEYJHQwN0Sg5LvvZhACzDckTHTcdwYnNlrvYH47n18pGoRGecIYtYof4GCd7kDHE9EokUmCHaa5OMkFFGzt6oRjpHvyYHEIhg6mON3sFgHq8To2h7Q6QBVZlRW4x3y7w6aKubIvnMiUqmeSilCEqmiaIcvV4KQxrtCxiAp98m98oc2r5uYprTB0fzrugquTSas0rLL+GPZTtNJqRqERwEweAPtik6jC96u2UQPoUcH9Si63Jf2bu0BAAlK2B+AAdspwXxEx1jjZBCau6QwlzBhsY3JhSaGYCWKBCcQ9rQxXjWKJs7Cyit2nQXOvkYC0R3SAsT+ijHnTskH+4oSULQ9vVAtA4ncGhvv0woaMpTc8HY1/zc5HNpk0XPvXVgg67LRilbz0UMTNb+zRl+K38q5TITOU="
+          secure: "G4M0GPsX3UJ2KKxUlZiBcUp648aBfHV0IItPK1ak5nJ5bMB3rbqB/divDfbm0L+gvjZcPtKvHQ3yZmNLwBJO95L7/WmEcxKPYUdi3YfZV6Kd4sq/hrDsFBYqHDwk6/UCKQGIrFz1LD+13ch4RIx9QhiZZC27ismORGK9KQA5ZAo+DnH55lY2AAg3Gb1sr1RnSzmKCKOmeTTESYLexAIEkE7nZ/4dT89KvlpgWdOcpJs2Mywp4t/v5EoLdGo7RbkhkTSMLfU6NaWXkl9ZC52ca34sIWevqoKiYcLLg8+6DKeSwMLgxHkh0w0VnTJGEs28NirKyQvd3Nc/OZ2jK92vWLuh2jDGkRO7m9tWXUVK2rN21rfhTK8qVA1mi2sgOSYN8F7ZGpxbvavyB9lyB+6xnCwITWGxAVIRkvxhanukc1jvupq4PrxuMDyPLDIol2nd/WXbteApePbrvHQ7G5622b2E8lXz4yBr24uhStHu8RGyaUTCsnsGdfCBJqlxv4miNnOcYkYuZGfToHMs53+m8xM4pS2YD5Z59fgykLp1QUu496XUvCh0loRuZvhQoizlBLjx1Eqg68uqi56ke3tEUC0oOIhZmoRHlXb6j9NlVIOC0MQOctfy4lBu43ODzrtmuWwjpyeCxmBUAQ2BmCqIS2Uzs8qr+Di0ixjhyK3feS0="
         on:
           condition: $ROCKETS_PY_DO_DEPLOY != ''
           branch: master
