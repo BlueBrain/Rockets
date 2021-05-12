@@ -112,6 +112,13 @@ set(ROCKETS_SOURCES
 # without linking client code with pthread, std::promise::set_value() dies with
 # std::system_error what():  Unknown error -1
 # https://stackoverflow.com/questions/43928715
-set(ROCKETS_LINK_LIBRARIES PUBLIC Threads::Threads PRIVATE websockets)
+# libwebsockets15 comes with cmake package info, which makes websockets the static library
+# This results on an error because we are linking a static library with a dynamic one without -fPIC
+if(TARGET websockets_shared)
+	set(ROCKETS_LINK_LIBRARIES PUBLIC Threads::Threads PRIVATE websockets_shared)
+else()
+	set(ROCKETS_LINK_LIBRARIES PUBLIC Threads::Threads PRIVATE websockets)
+endif()
+
 
 common_library(Rockets)
