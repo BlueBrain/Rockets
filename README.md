@@ -12,6 +12,7 @@
 * [Build](#build)
 * [Usage](#usage)
 * [Contribute](#contribute)
+* [Funding & Acknowledgment](#Funding & Acknowledgment)
 
 
 ## Features
@@ -106,3 +107,11 @@ Follow the next guidelines when making a contribution:
 * Install our [pre-commit](https://pre-commit.com/#install) hooks with `pre-commit install` prior the first commit
 * Use [Conventional Commits](https://www.conventionalcommits.org) spec whenever making a commit
 * Keep PRs to a single feature or fix
+
+
+## Funding & Acknowledgment
+ 
+The development of this software was supported by funding to the Blue Brain Project,
+a research center of the École polytechnique fédérale de Lausanne (EPFL), from the
+Swiss government’s ETH Board of the Swiss Federal Institutes of Technology.
+ 
