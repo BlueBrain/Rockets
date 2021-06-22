@@ -12,7 +12,7 @@
 * [Build](#build)
 * [Usage](#usage)
 * [Contribute](#contribute)
-* [Funding & Acknowledgment](#Funding & Acknowledgment)
+* [Funding & Acknowledgment](#Funding-&-Acknowledgment)
 
 
 ## Features
