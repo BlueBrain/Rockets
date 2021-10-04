@@ -1,5 +1,8 @@
-The following people have contributed to Rockets:
-
 Raphael Dumusc
+Andrei-Roland Groza
 Daniel Nachbaur
-Roland Groza
+
+Jonas Karlsson (contributor)
+Judit Planas Carbonell (contributor)
+Pawel Jozef Podhajski (contributor)
+Nadir Roman Guerrero (contributor)
